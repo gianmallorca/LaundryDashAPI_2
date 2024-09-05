@@ -13,7 +13,8 @@ namespace LaundryDashAPI_2.Controllers
     //[Authorize]
     [Route("api/services")]
     [ApiController]
-   // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
     public class ServicesController : Controller
     {
         private readonly ILogger<ServicesController> logger;

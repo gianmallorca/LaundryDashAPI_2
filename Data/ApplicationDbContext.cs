@@ -7,7 +7,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace LaundryDashAPI_2
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext<LaundryShopUser>
     {
         public ApplicationDbContext(DbContextOptions options) : base(options)
         {

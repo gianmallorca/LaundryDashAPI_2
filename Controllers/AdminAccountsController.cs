@@ -16,8 +16,8 @@ using System.Text;
 namespace LaundryDashAPI_2.Controllers
 {
     [ApiController]
-    [Route("api/accounts")]
-    public class AccountsController : ControllerBase
+    [Route("api/adminAccounts")]
+    public class AdminAccountsController : ControllerBase
     {
         private readonly UserManager<IdentityUser> userManager;
         private readonly SignInManager<IdentityUser> signInManager;
@@ -25,7 +25,7 @@ namespace LaundryDashAPI_2.Controllers
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
 
-        public AccountsController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+        public AdminAccountsController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;

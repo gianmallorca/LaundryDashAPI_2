@@ -1,6 +1,7 @@
 
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.APIBehavior;
+using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Filters;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -60,6 +61,7 @@ namespace LaundryDashAPI_2
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("IsAdmin", policy => policy.RequireClaim(ClaimTypes.Role, "admin"));
+                options.AddPolicy("IsLaundryShopAccount", policy => policy.RequireClaim(ClaimTypes.Role, "laundryShopAccount"));
             });
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -113,7 +115,7 @@ namespace LaundryDashAPI_2
 
             builder.Services.AddAutoMapper(typeof(Program));
             
-            builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+            builder.Services.AddIdentity<LaundryShopUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
             var app = builder.Build();

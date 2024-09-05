@@ -4,6 +4,7 @@ using LaundryDashAPI_2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240904161034_hello")]
+    partial class hello
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("LaundryServiceLogs", (string)null);
+                    b.ToTable("LaundryServiceLogs");
                 });
 
             modelBuilder.Entity("LaundryDashAPI_2.Entities.LaundryShop", b =>
@@ -60,7 +63,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasKey("LaundryShopId");
 
-                    b.ToTable("LaundryShops", (string)null);
+                    b.ToTable("LaundryShops");
                 });
 
             modelBuilder.Entity("LaundryDashAPI_2.Entities.LaundryShopUser", b =>
@@ -152,7 +155,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasKey("ServiceId");
 
-                    b.ToTable("Services", (string)null);
+                    b.ToTable("Services");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
