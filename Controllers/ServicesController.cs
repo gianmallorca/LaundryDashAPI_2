@@ -13,8 +13,7 @@ namespace LaundryDashAPI_2.Controllers
     //[Authorize]
     [Route("api/services")]
     [ApiController]
-    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
+    
     public class ServicesController : Controller
     {
         private readonly ILogger<ServicesController> logger;
@@ -28,7 +27,7 @@ namespace LaundryDashAPI_2.Controllers
             this.mapper = mapper;
         }
 
-        [HttpGet]
+        [HttpGet("getServices")]
         public async Task<ActionResult<List<ServiceDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.Services.AsQueryable();
@@ -39,7 +38,7 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<ServiceDTO>>(services);
         }
 
-        [HttpGet("{Id:Guid}", Name = "getService")]
+        [HttpGet("{Id:Guid}", Name = "getServiceById")]
         public async Task<ActionResult<ServiceDTO>> Get(Guid id)
         {
             var service = await context.Services.FirstOrDefaultAsync(x => x.ServiceId == id);
@@ -52,7 +51,7 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<ServiceDTO>(service);
         }
 
-        [HttpPost]
+        [HttpPost("createService")]
         public async Task<ActionResult> Post([FromBody] ServiceCreationDTO serviceCreationDTO)
         {
             var service = mapper.Map<Service>(serviceCreationDTO);
@@ -62,7 +61,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id:Guid}")]
+        [HttpPut("{id:Guid}", Name = "editService")]
         public async Task<ActionResult> Put(Guid id, [FromBody] ServiceCreationDTO serviceCreationDTO)
         {
             var service = await context.Services.FirstOrDefaultAsync(x => x.ServiceId == id);
@@ -77,7 +76,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:Guid}")]
+        [HttpDelete("{id:Guid}", Name = "deleteService")]
         public async Task<ActionResult> Delete(Guid id)
         {
             var exists = await context.Services.AnyAsync(x => x.ServiceId == id);

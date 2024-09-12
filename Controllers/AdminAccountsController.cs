@@ -19,7 +19,7 @@ namespace LaundryDashAPI_2.Controllers
     
     [Route("api/adminAccounts")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+    
     public class AdminAccountsController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;

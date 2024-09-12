@@ -13,7 +13,7 @@ using System.Security.Claims;
 
 namespace LaundryDashAPI_2.Controllers
 {
-    [Authorize]
+  
     [Route("api/laundryShops")]
     [ApiController]
  
@@ -32,8 +32,7 @@ namespace LaundryDashAPI_2.Controllers
             this.userManager = userManager;
         }
 
-        [HttpGet]
-       
+        [HttpGet("geLaundryShop")]
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.LaundryShops.AsQueryable();
@@ -46,7 +45,7 @@ namespace LaundryDashAPI_2.Controllers
 
         }
 
-        [HttpGet("{Id:Guid}", Name = "getLaundryShop")]
+        [HttpGet("{Id:Guid}", Name = "getLaundryShopById")]
       
         public async Task<ActionResult<LaundryShopDTO>> Get(Guid id)
         {
@@ -60,7 +59,7 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<LaundryShopDTO>(laundryShop);
         }
 
-        [HttpPost]
+        [HttpPost("createLaundryShop")]
      
         public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
@@ -77,7 +76,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id:Guid}")]
+        [HttpPut("{id:Guid}", Name ="editLaundryShop")]
        
         public async Task<ActionResult> Put(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
@@ -93,7 +92,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:Guid}")]
+        [HttpDelete("{id:Guid}", Name ="deleteLaundryShop")]
         
         public async Task<ActionResult> Delete(Guid id)
         {
