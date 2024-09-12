@@ -66,7 +66,8 @@ namespace LaundryDashAPI_2.Controllers
                 LastName = laundryShopUserCredentials.LastName,
                 UserName = laundryShopUserCredentials.Email,
                 Email = laundryShopUserCredentials.Email,
-                IsApproved = false // Set default approval status to false
+                UserType = "LaundryShopAccount",
+                IsApproved = false
             };
 
             // Attempt to create the user

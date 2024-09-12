@@ -16,8 +16,10 @@ using System.Text;
 
 namespace LaundryDashAPI_2.Controllers
 {
-    [ApiController]
+    
     [Route("api/adminAccounts")]
+    [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
     public class AdminAccountsController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;
@@ -64,14 +66,15 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
         {
-            // Create a new LaundryShopUser with the provided credentials
+            // Create a new ApplicationUser with the provided credentials
             var user = new ApplicationUser
             {
                 FirstName = adminUserCredentials.FirstName,
                 LastName = adminUserCredentials.LastName,
                 UserName = adminUserCredentials.Email,
                 Email = adminUserCredentials.Email,
-                IsApproved = true // Set default approval status to false
+                UserType = "Admin",
+                IsApproved = true // Set default approval status to true
             };
 
             // Attempt to create the user
@@ -79,74 +82,59 @@ namespace LaundryDashAPI_2.Controllers
 
             if (result.Succeeded)
             {
-                // Find the created user to check the IsApproved status
-                var createdUser = await userManager.FindByEmailAsync(adminUserCredentials.Email) as ApplicationUser;
-
-                // Check if the user is approved
-                if (createdUser != null && createdUser.IsApproved == true)
-                {
-                    // User is approved, generate and return a token
-                    return await BuildToken(adminUserCredentials, user);
-                }
-                else
-                {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
-                }
+                // Generate and return a token for the created user
+                return await BuildToken(adminUserCredentials, user);
             }
             else
             {
+                
                 // Return the errors if user creation failed
                 return BadRequest(result.Errors);
             }
         }
 
 
+
         [HttpPost("login")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
-            // Attempt to sign in the user with the provided credentials
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
-                // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
-                // Check if the user is approved
-                if (user != null && user.IsApproved == true)
+                if (user != null)
                 {
-                    // Convert LaundryShopUserLogin to LaundryShopUserCredentials
                     var userCredentials = new ApplicationUserCredentials
                     {
                         Email = login.Email,
                         Password = login.Password
                     };
 
-                    // Generate and return a token
                     return await BuildToken(userCredentials, user);
                 }
                 else
                 {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
+                    return NotFound("User not found.");
                 }
             }
             else
             {
-                // Login failed, return an error
                 return BadRequest("Incorrect Login");
             }
         }
 
+
+
         [HttpGet("listUsers")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
-        public async Task<ActionResult<List<UserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
+        public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.Users.AsQueryable();
             await HttpContext.InsertParametersPaginationInHeader(queryable);
             var users = await queryable.OrderBy(x => x.Email).Paginate(paginationDTO).ToListAsync();
-            return mapper.Map<List<UserDTO>>(users);
+            return mapper.Map<List<ApplicationUserDTO>>(users);
         }
 
         [HttpPost("makeAdmin")]

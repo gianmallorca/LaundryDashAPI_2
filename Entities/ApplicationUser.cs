@@ -8,5 +8,6 @@ namespace LaundryDashAPI_2.Entities
         public string FirstName {  get; set; }
         public string LastName { get; set; }
         public bool IsApproved { get; set; }
+        public string? UserType { get; set; }
     }
 }

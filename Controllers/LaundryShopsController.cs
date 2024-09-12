@@ -6,30 +6,34 @@ using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LaundryDashAPI_2.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/laundryShops")]
     [ApiController]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
-    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
+ 
     public class LaundryShopsController : Controller
     {
         private readonly ILogger<LaundryShopsController> logger;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly UserManager<ApplicationUser> userManager;
 
-        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper)
+        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper, UserManager<ApplicationUser> userManager)
         {
             this.logger = logger;
             this.context = context;
             this.mapper = mapper;
+            this.userManager = userManager;
         }
 
         [HttpGet]
+       
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.LaundryShops.AsQueryable();
@@ -43,6 +47,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("{Id:Guid}", Name = "getLaundryShop")]
+      
         public async Task<ActionResult<LaundryShopDTO>> Get(Guid id)
         {
             var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
@@ -56,9 +61,16 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPost]
+     
         public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             var laundryShop = mapper.Map<LaundryShop>(laundryShopCreationDTO);
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            var user = await userManager.FindByEmailAsync(email);
+
+
+            laundryShop.AddedById = user.Id.ToString();
             context.Add(laundryShop);
             await context.SaveChangesAsync();
 
@@ -66,6 +78,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPut("{id:Guid}")]
+       
         public async Task<ActionResult> Put(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
@@ -81,6 +94,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpDelete("{id:Guid}")]
+        
         public async Task<ActionResult> Delete(Guid id)
         {
             var exists = await context.LaundryShops.AnyAsync(x => x.LaundryShopId == id);
@@ -97,6 +111,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("PostGet")]
         [AllowAnonymous]
+        
         public async Task<ActionResult<List<LaundryShopDTO>>> GetCategoriesPostGet()
         {
             var laundryShops = await context.LaundryShops.ToListAsync();

@@ -16,7 +16,7 @@ namespace LaundryDashAPI_2.Helpers
             CreateMap<LaundryShopDTO, LaundryShop>().ReverseMap();
             CreateMap<LaundryShopCreationDTO, LaundryShop>();
 
-            CreateMap<IdentityUser, UserDTO>();
+            CreateMap<IdentityUser, ApplicationUserDTO>();
         }
     }
 }
