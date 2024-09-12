@@ -115,7 +115,7 @@ namespace LaundryDashAPI_2
 
             builder.Services.AddAutoMapper(typeof(Program));
             
-            builder.Services.AddIdentity<LaundryShopUser, IdentityRole>()
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
             var app = builder.Build();

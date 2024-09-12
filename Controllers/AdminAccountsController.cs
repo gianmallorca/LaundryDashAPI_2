@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -19,13 +20,13 @@ namespace LaundryDashAPI_2.Controllers
     [Route("api/adminAccounts")]
     public class AdminAccountsController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> userManager;
-        private readonly SignInManager<IdentityUser> signInManager;
+        private readonly UserManager<ApplicationUser> userManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
         private readonly IConfiguration configuration;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
 
-        public AdminAccountsController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+        public AdminAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -34,7 +35,7 @@ namespace LaundryDashAPI_2.Controllers
             this.mapper = mapper;
         }
         //Token
-        private async Task<AuthenticationResponse> BuildToken(UserCredentials userCredentials, IdentityUser user)
+        private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials userCredentials, ApplicationUser user)
         {
             var claims = new List<Claim>()
             {
@@ -61,33 +62,79 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] UserCredentials userCredentials)
+        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
         {
+            // Create a new LaundryShopUser with the provided credentials
+            var user = new ApplicationUser
+            {
+                FirstName = adminUserCredentials.FirstName,
+                LastName = adminUserCredentials.LastName,
+                UserName = adminUserCredentials.Email,
+                Email = adminUserCredentials.Email,
+                IsApproved = true // Set default approval status to false
+            };
 
-            var user = new IdentityUser { UserName = userCredentials.Email, Email = userCredentials.Email };
-            var result = await userManager.CreateAsync(user, userCredentials.Password);
+            // Attempt to create the user
+            var result = await userManager.CreateAsync(user, adminUserCredentials.Password);
 
             if (result.Succeeded)
             {
-                return await BuildToken(userCredentials, user);
+                // Find the created user to check the IsApproved status
+                var createdUser = await userManager.FindByEmailAsync(adminUserCredentials.Email) as ApplicationUser;
+
+                // Check if the user is approved
+                if (createdUser != null && createdUser.IsApproved == true)
+                {
+                    // User is approved, generate and return a token
+                    return await BuildToken(adminUserCredentials, user);
+                }
+                else
+                {
+                    // User is not approved
+                    return Unauthorized("User account is not approved.");
+                }
             }
             else
             {
+                // Return the errors if user creation failed
                 return BadRequest(result.Errors);
             }
         }
 
+
         [HttpPost("login")]
-        public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] UserCredentials userCredentials)
+        public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
-            var result = await signInManager.PasswordSignInAsync(userCredentials.Email, userCredentials.Password, isPersistent: false, lockoutOnFailure: false);
+            // Attempt to sign in the user with the provided credentials
+            var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
+
             if (result.Succeeded)
             {
-                var user = await userManager.FindByEmailAsync(userCredentials.Email);
-                return await BuildToken(userCredentials, user);
+                // Find the user by their email
+                var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
+
+                // Check if the user is approved
+                if (user != null && user.IsApproved == true)
+                {
+                    // Convert LaundryShopUserLogin to LaundryShopUserCredentials
+                    var userCredentials = new ApplicationUserCredentials
+                    {
+                        Email = login.Email,
+                        Password = login.Password
+                    };
+
+                    // Generate and return a token
+                    return await BuildToken(userCredentials, user);
+                }
+                else
+                {
+                    // User is not approved
+                    return Unauthorized("User account is not approved.");
+                }
             }
             else
             {
+                // Login failed, return an error
                 return BadRequest("Incorrect Login");
             }
         }

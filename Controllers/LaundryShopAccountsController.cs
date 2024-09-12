@@ -15,13 +15,13 @@ namespace LaundryDashAPI_2.Controllers
     [Route("api/laundryShopAccounts")]
     public class LaundryShopAccountsController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> userManager;
-        private readonly SignInManager<IdentityUser> signInManager;
+        private readonly UserManager<ApplicationUser> userManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
         private readonly IConfiguration configuration;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
 
-        public LaundryShopAccountsController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+        public LaundryShopAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -30,7 +30,7 @@ namespace LaundryDashAPI_2.Controllers
             this.mapper = mapper;
         }
 
-        private async Task<AuthenticationResponse> BuildToken(LaundryShopUserCredentials laundryShopUserCredentials, IdentityUser user)
+        private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials laundryShopUserCredentials, ApplicationUser user)
         {
             var claims = new List<Claim>()
             {
@@ -57,11 +57,13 @@ namespace LaundryDashAPI_2.Controllers
         }
         //fix
         [HttpPost("create")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] LaundryShopUserCredentials laundryShopUserCredentials)
+        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
         {
             // Create a new LaundryShopUser with the provided credentials
-            var user = new LaundryShopUser
+            var user = new ApplicationUser
             {
+                FirstName = laundryShopUserCredentials.FirstName,
+                LastName = laundryShopUserCredentials.LastName,
                 UserName = laundryShopUserCredentials.Email,
                 Email = laundryShopUserCredentials.Email,
                 IsApproved = false // Set default approval status to false
@@ -73,10 +75,10 @@ namespace LaundryDashAPI_2.Controllers
             if (result.Succeeded)
             {
                 // Find the created user to check the IsApproved status
-                var createdUser = await userManager.FindByEmailAsync(laundryShopUserCredentials.Email) as LaundryShopUser;
+                var createdUser = await userManager.FindByEmailAsync(laundryShopUserCredentials.Email) as ApplicationUser;
 
                 // Check if the user is approved
-                if (createdUser != null && createdUser.IsApproved)
+                if (createdUser != null && createdUser.IsApproved == true)
                 {
                     // User is approved, generate and return a token
                     return await BuildToken(laundryShopUserCredentials, user);
@@ -96,7 +98,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] LaundryShopUserLogin login)
+        public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
             // Attempt to sign in the user with the provided credentials
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
@@ -104,13 +106,13 @@ namespace LaundryDashAPI_2.Controllers
             if (result.Succeeded)
             {
                 // Find the user by their email
-                var user = await userManager.FindByEmailAsync(login.Email) as LaundryShopUser;
+                var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
                 // Check if the user is approved
-                if (user != null && user.IsApproved)
+                if (user != null && user.IsApproved == true)
                 {
                     // Convert LaundryShopUserLogin to LaundryShopUserCredentials
-                    var userCredentials = new LaundryShopUserCredentials
+                    var userCredentials = new ApplicationUserCredentials
                     {
                         Email = login.Email,
                         Password = login.Password
