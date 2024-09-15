@@ -32,7 +32,7 @@ namespace LaundryDashAPI_2.Controllers
             this.userManager = userManager;
         }
 
-        [HttpGet("geLaundryShop")]
+        [HttpGet("getLaundryShop")]
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.LaundryShops.AsQueryable();
