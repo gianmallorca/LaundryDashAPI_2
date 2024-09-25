@@ -51,7 +51,7 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<ServiceDTO>(service);
         }
 
-        [HttpPost("createService")]
+        [HttpPost]
         public async Task<ActionResult> Post([FromBody] ServiceCreationDTO serviceCreationDTO)
         {
             var service = mapper.Map<Service>(serviceCreationDTO);
@@ -91,7 +91,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpGet("PostGet")]
+        [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<List<ServiceDTO>>> GetServicesPostGet()
         {
