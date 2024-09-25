@@ -108,7 +108,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Set the AddedById property and save the entity
-            laundryShop.AddedById = user.Id.ToString();
+            laundryShop.AddedById = user.Id;
             context.Add(laundryShop);
             await context.SaveChangesAsync();
 
