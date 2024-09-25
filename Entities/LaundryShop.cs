@@ -12,7 +12,7 @@ namespace LaundryDashAPI_2.Entities
 
         public string LaundryShopName { get; set; }
         public string Address {  get; set; }
-        public string AddedById { get; set; }
+        public string? AddedById { get; set; }
 
         public ICollection<LaundryServiceLog>LaundryServiceLogs { get; set; }
     }

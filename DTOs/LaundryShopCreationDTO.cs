@@ -10,5 +10,6 @@ namespace LaundryDashAPI_2.DTOs
         [FirstLetterUppercase]
         public string LaundryShopName { get; set; }
         public string Address { get; set; }
+        
     }
 }

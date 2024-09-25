@@ -59,22 +59,61 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<LaundryShopDTO>(laundryShop);
         }
 
+        //[HttpPost("createLaundryShop")]
+
+        //public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
+        //{
+        //    var laundryShop = mapper.Map<LaundryShop>(laundryShopCreationDTO);
+
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        //    var user = await userManager.FindByEmailAsync(email);
+
+
+        //    laundryShop.AddedById = user.Id.ToString();
+        //    context.Add(laundryShop);
+        //    await context.SaveChangesAsync();
+
+        //    return NoContent();
+        //}
+
         [HttpPost("createLaundryShop")]
-     
         public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
+            if (laundryShopCreationDTO == null)
+            {
+                return BadRequest("Request body cannot be null.");
+            }
+
+            // Map the DTO to the entity
             var laundryShop = mapper.Map<LaundryShop>(laundryShopCreationDTO);
+
+            // Retrieve the email from the current user's claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
             var user = await userManager.FindByEmailAsync(email);
 
+            // Check if the user was found
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
 
+            // Set the AddedById property and save the entity
             laundryShop.AddedById = user.Id.ToString();
             context.Add(laundryShop);
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
         [HttpPut("{id:Guid}", Name ="editLaundryShop")]
        

@@ -119,7 +119,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("LaundryServiceLogs");
+                    b.ToTable("LaundryServiceLogs", (string)null);
                 });
 
             modelBuilder.Entity("LaundryDashAPI_2.Entities.LaundryShop", b =>
@@ -143,7 +143,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasKey("LaundryShopId");
 
-                    b.ToTable("LaundryShops");
+                    b.ToTable("LaundryShops", (string)null);
                 });
 
             modelBuilder.Entity("LaundryDashAPI_2.Entities.Service", b =>
@@ -159,7 +159,7 @@ namespace LaundryDashAPI_2.Migrations
 
                     b.HasKey("ServiceId");
 
-                    b.ToTable("Services");
+                    b.ToTable("Services", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

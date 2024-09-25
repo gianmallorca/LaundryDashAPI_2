@@ -6,20 +6,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace LaundryDashAPI_2.Controllers
 {
-    
+
     [Route("api/adminAccounts")]
     [ApiController]
-    
+
     public class AdminAccountsController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;
@@ -63,6 +61,40 @@ namespace LaundryDashAPI_2.Controllers
             };
         }
 
+        //[HttpPost("create")]
+        //public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
+        //{
+        //    // Create a new ApplicationUser with the provided credentials
+        //    var user = new ApplicationUser
+        //    {
+        //        FirstName = adminUserCredentials.FirstName,
+        //        LastName = adminUserCredentials.LastName,
+        //        UserName = adminUserCredentials.Email,
+        //        Email = adminUserCredentials.Email,
+        //        UserType = "Admin",
+        //        IsApproved = true // Set default approval status to true
+        //    };
+
+        //    // Attempt to create the user
+        //    var result = await userManager.CreateAsync(user, adminUserCredentials.Password);
+
+        //    if (result.Succeeded)
+        //    {
+        //        // Generate and return a token for the created user
+        //        return await BuildToken(adminUserCredentials, user);
+        //        await userManager.AddClaimAsync(user, new Claim("role", "admin"));
+        //    }
+        //    else
+        //    {
+
+        //        // Return the errors if user creation failed
+        //        return BadRequest(result.Errors);
+        //    }
+        //}
+
+
+
+        //delete after
         [HttpPost("create")]
         public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
         {
@@ -82,16 +114,24 @@ namespace LaundryDashAPI_2.Controllers
 
             if (result.Succeeded)
             {
+                // Add the claim before generating the token
+                var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "admin"));
+
+                if (!claimResult.Succeeded)
+                {
+                    return BadRequest(claimResult.Errors); // Handle any errors with adding the claim
+                }
+
                 // Generate and return a token for the created user
                 return await BuildToken(adminUserCredentials, user);
             }
             else
             {
-                
                 // Return the errors if user creation failed
                 return BadRequest(result.Errors);
             }
         }
+
 
 
 

@@ -12,8 +12,8 @@ using System.Text;
 namespace LaundryDashAPI_2.Controllers
 {
     [ApiController]
-    [Route("api/laundryShopAccounts")]
-    public class LaundryShopAccountsController : ControllerBase
+    [Route("api/riderAccounts")]
+    public class RiderAccountsController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
@@ -21,7 +21,7 @@ namespace LaundryDashAPI_2.Controllers
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
 
-        public LaundryShopAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+        public RiderAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -34,7 +34,7 @@ namespace LaundryDashAPI_2.Controllers
         {
             var claims = new List<Claim>()
             {
-                new Claim ("role", "laundryShopAccount")
+                new Claim ("role", "riderAccount")
             };
 
             // Add claims from AspNetUserClaims
@@ -56,17 +56,17 @@ namespace LaundryDashAPI_2.Controllers
             };
         }
         //fix
-        [HttpPost("create")]
+        [HttpPost("createRiderAccount")]
         public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
         {
             // Create a new LaundryShopUser with the provided credentials
             var user = new ApplicationUser
             {
-                FirstName = laundryShopUserCredentials.FirstName,
+                FirstName = laundryShopUserCredentials.FirstName, 
                 LastName = laundryShopUserCredentials.LastName,
                 UserName = laundryShopUserCredentials.Email,
                 Email = laundryShopUserCredentials.Email,
-                UserType = "LaundryShopAccount",
+                UserType = "RiderAccount",
                 IsApproved = false
             };
 
@@ -82,7 +82,7 @@ namespace LaundryDashAPI_2.Controllers
                 if (createdUser != null && createdUser.IsApproved == true)
                 {
                     // User is approved, generate and return a token
-                    var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
+                    var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
                     return await BuildToken(laundryShopUserCredentials, user);
                 }
                 else
@@ -99,7 +99,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        [HttpPost("login")]
+        [HttpPost("loginRiderAccount")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
             // Attempt to sign in the user with the provided credentials
