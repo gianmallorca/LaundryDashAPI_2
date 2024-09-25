@@ -78,6 +78,7 @@ namespace LaundryDashAPI_2.Controllers
         //}
 
         [HttpPost("createLaundryShop")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
         public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             if (laundryShopCreationDTO == null)

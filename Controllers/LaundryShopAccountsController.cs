@@ -34,7 +34,7 @@ namespace LaundryDashAPI_2.Controllers
         {
             var claims = new List<Claim>()
             {
-                new Claim ("role", "laundryShopAccount")
+                new Claim ("email", laundryShopUserCredentials.Email)
             };
 
             // Add claims from AspNetUserClaims

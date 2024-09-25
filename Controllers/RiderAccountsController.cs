@@ -30,11 +30,11 @@ namespace LaundryDashAPI_2.Controllers
             this.mapper = mapper;
         }
 
-        private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials laundryShopUserCredentials, ApplicationUser user)
+        private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials riderUserCredentials, ApplicationUser user)
         {
             var claims = new List<Claim>()
             {
-                new Claim ("role", "riderAccount")
+                new Claim ("email", riderUserCredentials.Email)
             };
 
             // Add claims from AspNetUserClaims
@@ -57,33 +57,33 @@ namespace LaundryDashAPI_2.Controllers
         }
         //fix
         [HttpPost("createRiderAccount")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
+        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
         {
             // Create a new LaundryShopUser with the provided credentials
             var user = new ApplicationUser
             {
-                FirstName = laundryShopUserCredentials.FirstName, 
-                LastName = laundryShopUserCredentials.LastName,
-                UserName = laundryShopUserCredentials.Email,
-                Email = laundryShopUserCredentials.Email,
+                FirstName = riderUserCredentials.FirstName, 
+                LastName = riderUserCredentials.LastName,
+                UserName = riderUserCredentials.Email,
+                Email = riderUserCredentials.Email,
                 UserType = "RiderAccount",
                 IsApproved = false
             };
 
             // Attempt to create the user
-            var result = await userManager.CreateAsync(user, laundryShopUserCredentials.Password);
+            var result = await userManager.CreateAsync(user, riderUserCredentials.Password);
 
             if (result.Succeeded)
             {
                 // Find the created user to check the IsApproved status
-                var createdUser = await userManager.FindByEmailAsync(laundryShopUserCredentials.Email) as ApplicationUser;
+                var createdUser = await userManager.FindByEmailAsync(riderUserCredentials.Email) as ApplicationUser;
 
                 // Check if the user is approved
                 if (createdUser != null && createdUser.IsApproved == true)
                 {
                     // User is approved, generate and return a token
                     var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
-                    return await BuildToken(laundryShopUserCredentials, user);
+                    return await BuildToken(riderUserCredentials, user);
                 }
                 else
                 {
