@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DataAnnotationsExtensions;
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.Entities;
@@ -27,7 +28,7 @@ namespace LaundryDashAPI_2.Controllers
             this.mapper = mapper;
         }
 
-        [HttpGet("getServices")]
+        [HttpGet]
         public async Task<ActionResult<List<ServiceDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var queryable = context.Services.AsQueryable();
@@ -38,7 +39,7 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<ServiceDTO>>(services);
         }
 
-        [HttpGet("{Id:Guid}", Name = "getServiceById")]
+        [HttpGet("{Id:Guid}"    , Name = "getServices")]
         public async Task<ActionResult<ServiceDTO>> Get(Guid id)
         {
             var service = await context.Services.FirstOrDefaultAsync(x => x.ServiceId == id);
@@ -76,7 +77,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:Guid}", Name = "deleteService")]
+        [HttpDelete("{id:Guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {
             var exists = await context.Services.AnyAsync(x => x.ServiceId == id);
@@ -91,7 +92,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpGet]
+        [HttpGet("PostGet")]
         [AllowAnonymous]
         public async Task<ActionResult<List<ServiceDTO>>> GetServicesPostGet()
         {
