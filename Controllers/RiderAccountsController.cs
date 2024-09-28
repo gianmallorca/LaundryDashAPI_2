@@ -56,7 +56,7 @@ namespace LaundryDashAPI_2.Controllers
             };
         }
         //fix
-        [HttpPost("createRiderAccount")]
+        [HttpPost("create")]
         public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
         {
             // Create a new LaundryShopUser with the provided credentials
@@ -99,7 +99,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        [HttpPost("loginRiderAccount")]
+        [HttpPost("login")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
             // Attempt to sign in the user with the provided credentials
