@@ -255,11 +255,24 @@ namespace LaundryDashAPI_2.Controllers
         [HttpGet("listUsers")]
         public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
         {
-            var queryable = context.Users.AsQueryable();
+            // Filter users where UserType equals 'RiderAccount'
+            var queryable = context.Users
+                .Where(x => x.UserType == "RiderAccount")  // Add a filter for UserType
+                .AsQueryable();
+
+            // Apply pagination headers
             await HttpContext.InsertParametersPaginationInHeader(queryable);
-            var users = await queryable.OrderBy(x => x.Email).Paginate(paginationDTO).ToListAsync();
+
+            // Order the results by Email and paginate
+            var users = await queryable
+                .OrderBy(x => x.Email)
+                .Paginate(paginationDTO)
+                .ToListAsync();
+
+            // Map the result to a list of ApplicationUserDTO and return
             return mapper.Map<List<ApplicationUserDTO>>(users);
         }
+
 
 
 
