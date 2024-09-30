@@ -214,9 +214,9 @@ namespace LaundryDashAPI_2.Controllers
             }
         }
 
-        [HttpPost("approveRiderAccount")]
+     //   [HttpPost("approveRiderAccount")]
 
 
 
-    }
+    } 
 }
