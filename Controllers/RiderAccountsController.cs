@@ -256,8 +256,9 @@ namespace LaundryDashAPI_2.Controllers
         {
             // Filter users where UserType equals 'RiderAccount'
             var queryable = context.Users
-                .Where(x => x.UserType == "RiderAccount")  // Add a filter for UserType
-                .AsQueryable();
+     .Where(x => x.UserType == "RiderAccount" && x.IsApproved == false)  // Add a filter for UserType and IsApproved
+     .AsQueryable();
+
 
             // Apply pagination headers
             await HttpContext.InsertParametersPaginationInHeader(queryable);
