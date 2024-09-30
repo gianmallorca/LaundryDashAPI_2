@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.Entities;
+using LaundryDashAPI_2.Helpers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -214,9 +218,51 @@ namespace LaundryDashAPI_2.Controllers
             }
         }
 
-     //   [HttpPost("approveRiderAccount")]
+        [HttpPut("approveRiderAccount/{id}")]
+        public async Task<ActionResult> ApproveRiderAccount([FromBody] Guid id)
+        {
+            // Retrieve the user account by ID
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Check if the user is not already approved
+            if (user.IsApproved)
+            {
+                return BadRequest("User account is already approved.");
+            }
+
+            // Set the user's IsApproved property to true
+            user.IsApproved = true;
+
+            // Update the user account in the database
+            var result = await userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return NoContent(); // Successfully approved, return 204 No Content
+            }
+            else
+            {
+                return BadRequest(result.Errors); // Handle any errors that occurred during update
+            }
+
+            
+        }
+
+        [HttpGet("listUsers")]
+        public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
+        {
+            var queryable = context.Users.AsQueryable();
+            await HttpContext.InsertParametersPaginationInHeader(queryable);
+            var users = await queryable.OrderBy(x => x.Email).Paginate(paginationDTO).ToListAsync();
+            return mapper.Map<List<ApplicationUserDTO>>(users);
+        }
 
 
 
-    } 
+
+    }
 }
