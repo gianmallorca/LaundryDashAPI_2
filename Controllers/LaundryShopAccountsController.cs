@@ -34,7 +34,8 @@ namespace LaundryDashAPI_2.Controllers
         {
             var claims = new List<Claim>()
             {
-                new Claim ("email", laundryShopUserCredentials.Email)
+                //new Claim ("email", userCredentials.Email)
+                 new Claim(ClaimTypes.Email, laundryShopUserCredentials.Email) // Add the email claim
             };
 
             // Add claims from AspNetUserClaims
@@ -71,25 +72,21 @@ namespace LaundryDashAPI_2.Controllers
             };
 
             // Attempt to create the user
+
             var result = await userManager.CreateAsync(user, laundryShopUserCredentials.Password);
 
             if (result.Succeeded)
             {
-                // Find the created user to check the IsApproved status
-                var createdUser = await userManager.FindByEmailAsync(laundryShopUserCredentials.Email) as ApplicationUser;
+                // Add the claim before generating the token
+                var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
 
-                // Check if the user is approved
-                if (createdUser != null && createdUser.IsApproved == true)
+                if (!claimResult.Succeeded)
                 {
-                    // User is approved, generate and return a token
-                    var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
-                    return await BuildToken(laundryShopUserCredentials, user);
+                    return BadRequest(claimResult.Errors); // Handle any errors with adding the claim
                 }
-                else
-                {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
-                }
+
+                // Generate and return a token for the created user
+                return await BuildToken(laundryShopUserCredentials, user);
             }
             else
             {

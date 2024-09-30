@@ -34,7 +34,8 @@ namespace LaundryDashAPI_2.Controllers
         {
             var claims = new List<Claim>()
             {
-                new Claim ("email", riderUserCredentials.Email)
+                //new Claim ("email", userCredentials.Email)
+                 new Claim(ClaimTypes.Email, riderUserCredentials.Email) // Add the email claim
             };
 
             // Add claims from AspNetUserClaims
@@ -56,18 +57,55 @@ namespace LaundryDashAPI_2.Controllers
             };
         }
         //fix
+        //[HttpPost("create")]
+        //public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
+        //{
+        //    // Create a new LaundryShopUser with the provided credentials
+        //    var user = new ApplicationUser
+        //    {
+        //        FirstName = riderUserCredentials.FirstName, 
+        //        LastName = riderUserCredentials.LastName,
+        //        UserName = riderUserCredentials.Email,
+        //        Email = riderUserCredentials.Email,
+        //        UserType = "RiderAccount",
+        //        IsApproved = false
+        //    };
+
+        //    // Attempt to create the user
+        //    var result = await userManager.CreateAsync(user, riderUserCredentials.Password);
+
+        //    if (result.Succeeded)
+        //    {
+        //        // Add the claim before generating the token
+        //        var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
+
+        //        if (!claimResult.Succeeded)
+        //        {
+        //            return BadRequest(claimResult.Errors); // Handle any errors with adding the claim
+        //        }
+
+        //        // Generate and return a token for the created user
+        //        return await BuildToken(riderUserCredentials, user);
+        //    }
+        //    else
+        //    {
+        //        // Return the errors if user creation failed
+        //        return BadRequest(result.Errors);
+        //    }
+        //}
+
         [HttpPost("create")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
+        public async Task<ActionResult> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
         {
-            // Create a new LaundryShopUser with the provided credentials
+            // Create a new ApplicationUser with the provided credentials
             var user = new ApplicationUser
             {
-                FirstName = riderUserCredentials.FirstName, 
+                FirstName = riderUserCredentials.FirstName,
                 LastName = riderUserCredentials.LastName,
                 UserName = riderUserCredentials.Email,
                 Email = riderUserCredentials.Email,
                 UserType = "RiderAccount",
-                IsApproved = false
+                IsApproved = false // User is not approved by default
             };
 
             // Attempt to create the user
@@ -75,21 +113,8 @@ namespace LaundryDashAPI_2.Controllers
 
             if (result.Succeeded)
             {
-                // Find the created user to check the IsApproved status
-                var createdUser = await userManager.FindByEmailAsync(riderUserCredentials.Email) as ApplicationUser;
-
-                // Check if the user is approved
-                if (createdUser != null && createdUser.IsApproved == true)
-                {
-                    // User is approved, generate and return a token
-                    var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
-                    return await BuildToken(riderUserCredentials, user);
-                }
-                else
-                {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
-                }
+                // Do not issue a claim or token yet since the user is not approved
+                return Ok(new { Message = "User created successfully, but approval is pending." });
             }
             else
             {
@@ -98,6 +123,44 @@ namespace LaundryDashAPI_2.Controllers
             }
         }
 
+
+
+        //[HttpPost("login")]
+        //public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
+        //{
+        //    // Attempt to sign in the user with the provided credentials
+        //    var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
+
+        //    if (result.Succeeded)
+        //    {
+        //        // Find the user by their email
+        //        var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
+
+        //        // Check if the user is approved
+        //        if (user != null && user.IsApproved == true)
+        //        {
+        //            // Convert LaundryShopUserLogin to LaundryShopUserCredentials
+        //            var userCredentials = new ApplicationUserCredentials
+        //            {
+        //                Email = login.Email,
+        //                Password = login.Password
+        //            };
+
+        //            // Generate and return a token
+        //            return await BuildToken(userCredentials, user);
+        //        }
+        //        else
+        //        {
+        //            // User is not approved
+        //            return Unauthorized("User account is not approved.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // Login failed, return an error
+        //        return BadRequest("Incorrect Login");
+        //    }
+        //}
 
         [HttpPost("login")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
@@ -110,31 +173,49 @@ namespace LaundryDashAPI_2.Controllers
                 // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
-                // Check if the user is approved
-                if (user != null && user.IsApproved == true)
+                if (user != null)
                 {
-                    // Convert LaundryShopUserLogin to LaundryShopUserCredentials
-                    var userCredentials = new ApplicationUserCredentials
+                    // Check if the user is approved
+                    if (user.IsApproved)
                     {
-                        Email = login.Email,
-                        Password = login.Password
-                    };
+                        // Convert ApplicationUserLogin to ApplicationUserCredentials
+                        var userCredentials = new ApplicationUserCredentials
+                        {
+                            Email = login.Email,
+                            Password = login.Password
+                        };
 
-                    // Generate and return a token
-                    return await BuildToken(userCredentials, user);
+                        // Add the role claim if necessary
+                        var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
+                        if (!claimResult.Succeeded)
+                        {
+                            return BadRequest("Failed to add claim.");
+                        }
+
+                        // Generate and return a token for the user
+                        return await BuildToken(userCredentials, user);
+                    }
+                    else
+                    {
+                        // User is not approved, return unauthorized
+                        return Unauthorized("User account is not approved.");
+                    }
                 }
                 else
                 {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
+                    // User not found
+                    return NotFound("User not found.");
                 }
             }
             else
             {
                 // Login failed, return an error
-                return BadRequest("Incorrect Login");
+                return BadRequest("Incorrect login credentials.");
             }
         }
+
+        [HttpPost("approveRiderAccount")]
+
 
 
     }
