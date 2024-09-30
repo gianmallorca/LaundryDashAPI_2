@@ -219,7 +219,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPut("approveRiderAccount/{id}")]
-        public async Task<ActionResult> ApproveRiderAccount([FromBody] Guid id)
+        public async Task<ActionResult> ApproveRiderAccount([FromRoute] Guid id) // Use FromRoute instead of FromBody
         {
             // Retrieve the user account by ID
             var user = await userManager.FindByIdAsync(id.ToString());
@@ -248,9 +248,8 @@ namespace LaundryDashAPI_2.Controllers
             {
                 return BadRequest(result.Errors); // Handle any errors that occurred during update
             }
-
-            
         }
+
 
         [HttpGet("listUsers")]
         public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
