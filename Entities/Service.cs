@@ -9,6 +9,5 @@ namespace LaundryDashAPI_2.Entities
         [StringLength(50)]
         public string ServiceName { get; set; }
 
-        public ICollection<LaundryServiceLog> LaundryServiceLogs { get; set; }
     }
 }

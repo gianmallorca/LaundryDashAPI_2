@@ -51,30 +51,45 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<LaundryServiceLogDTO>(laundryServiceLog);
         }
 
+
+        //will handle multiple service ids at once
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
+
+            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds; 
+           
             context.Add(laundryServiceLog);
+
             await context.SaveChangesAsync();
 
             return NoContent();
         }
 
+        //update only the list of services
         [HttpPut("{id:Guid}")]
         public async Task<ActionResult> Put(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
-            var laundryServiceLog = await context.LaundryServiceLogs.FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
+            // Find the existing LaundryServiceLog by ID
+            var laundryServiceLog = await context.LaundryServiceLogs
+                .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
+
+            // Check if the log exists
             if (laundryServiceLog == null)
             {
                 return NotFound();
             }
 
-            laundryServiceLog = mapper.Map(laundryServiceLogCreationDTO, laundryServiceLog);
+            // Only update the ServiceIds, keeping LaundryShopId unchanged
+            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds;
+
+            // Save the changes to the context
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
         [HttpDelete("{id:Guid}")]
         public async Task<ActionResult> Delete(Guid id)
@@ -92,7 +107,6 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("PostGet")]
-        [AllowAnonymous]
         public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetServiceLogsPostGet()
         {
             var laundryServiceLogs = await context.LaundryServiceLogs.ToListAsync();

@@ -169,31 +169,35 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
-            // Attempt to sign in the user with the provided credentials
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
-                // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
                 if (user != null)
                 {
-                    // Check if the user is approved
                     if (user.IsApproved)
                     {
-                        // Convert ApplicationUserLogin to ApplicationUserCredentials
                         var userCredentials = new ApplicationUserCredentials
                         {
                             Email = login.Email,
                             Password = login.Password
                         };
 
-                        // Add the role claim if necessary
-                        var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
-                        if (!claimResult.Succeeded)
+                        var claims = await userManager.GetClaimsAsync(user);
+
+                        // Check if the role claim "riderAccount" already exists
+                        var hasRiderAccountClaim = claims.Any(c => c.Type == "role" && c.Value == "riderAccount");
+
+                        if (!hasRiderAccountClaim)
                         {
-                            return BadRequest("Failed to add claim.");
+                            // Add the role claim if it doesn't exist
+                            var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
+                            if (!claimResult.Succeeded)
+                            {
+                                return BadRequest("Failed to add claim.");
+                            }
                         }
 
                         // Generate and return a token for the user
@@ -216,9 +220,11 @@ namespace LaundryDashAPI_2.Controllers
                 // Login failed, return an error
                 return BadRequest("Incorrect login credentials.");
             }
+
         }
 
         [HttpPut("approveRiderAccount/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
         public async Task<ActionResult> ApproveRiderAccount([FromRoute] Guid id) // Use FromRoute instead of FromBody
         {
             // Retrieve the user account by ID
@@ -252,12 +258,13 @@ namespace LaundryDashAPI_2.Controllers
 
 
         [HttpGet("listUsers")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
         public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
         {
             // Filter users where UserType equals 'RiderAccount'
             var queryable = context.Users
-     .Where(x => x.UserType == "RiderAccount" && x.IsApproved == false)  // Add a filter for UserType and IsApproved
-     .AsQueryable();
+             .Where(x => x.UserType == "RiderAccount" && x.IsApproved == false)  // Add a filter for UserType and IsApproved
+             .AsQueryable();
 
 
             // Apply pagination headers

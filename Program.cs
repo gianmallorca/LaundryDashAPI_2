@@ -63,6 +63,7 @@ namespace LaundryDashAPI_2
                 options.AddPolicy("IsAdmin", policy => policy.RequireClaim(ClaimTypes.Role, "admin"));
                 options.AddPolicy("IsLaundryShopAccount", policy => policy.RequireClaim(ClaimTypes.Role, "laundryShopAccount"));
                 options.AddPolicy("IsRiderAccount", policy => policy.RequireClaim(ClaimTypes.Role, "riderAccount"));
+                options.AddPolicy("IsClientAccount", policy => policy.RequireClaim(ClaimTypes.Role, "clientAccount"));
             });
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
