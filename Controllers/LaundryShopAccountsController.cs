@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.Entities;
+using LaundryDashAPI_2.Helpers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -58,7 +62,7 @@ namespace LaundryDashAPI_2.Controllers
         }
         //fix
         [HttpPost("create")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
+        public async Task<ActionResult> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
         {
             // Create a new LaundryShopUser with the provided credentials
             var user = new ApplicationUser
@@ -68,25 +72,16 @@ namespace LaundryDashAPI_2.Controllers
                 UserName = laundryShopUserCredentials.Email,
                 Email = laundryShopUserCredentials.Email,
                 UserType = "LaundryShopAccount",
-                IsApproved = false
+                IsApproved = false // User is not approved by default
             };
 
             // Attempt to create the user
-
             var result = await userManager.CreateAsync(user, laundryShopUserCredentials.Password);
 
             if (result.Succeeded)
             {
-                // Add the claim before generating the token
-                var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
-
-                if (!claimResult.Succeeded)
-                {
-                    return BadRequest(claimResult.Errors); // Handle any errors with adding the claim
-                }
-
-                // Generate and return a token for the created user
-                return await BuildToken(laundryShopUserCredentials, user);
+                // Do not issue a claim or token yet since the user is not approved
+                return Ok(new { Message = "Laundry shop user created successfully, but approval is pending." });
             }
             else
             {
@@ -94,6 +89,7 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest(result.Errors);
             }
         }
+
 
 
         [HttpPost("login")]
@@ -107,31 +103,114 @@ namespace LaundryDashAPI_2.Controllers
                 // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
-                // Check if the user is approved
-                if (user != null && user.IsApproved == true)
+                if (user != null)
                 {
-                    // Convert LaundryShopUserLogin to LaundryShopUserCredentials
-                    var userCredentials = new ApplicationUserCredentials
+                    // Check if the user is approved
+                    if (user.IsApproved)
                     {
-                        Email = login.Email,
-                        Password = login.Password
-                    };
+                        // Convert ApplicationUserLogin to ApplicationUserCredentials
+                        var userCredentials = new ApplicationUserCredentials
+                        {
+                            Email = login.Email,
+                            Password = login.Password
+                        };
 
-                    // Generate and return a token
-                    return await BuildToken(userCredentials, user);
+                        // Get the user's claims
+                        var claims = await userManager.GetClaimsAsync(user);
+
+                        // Check if the role claim "laundryShopAccount" already exists
+                        var hasLaundryShopAccountClaim = claims.Any(c => c.Type == "role" && c.Value == "laundryShopAccount");
+
+                        if (!hasLaundryShopAccountClaim)
+                        {
+                            // Add the role claim if it doesn't exist
+                            var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
+                            if (!claimResult.Succeeded)
+                            {
+                                return BadRequest("Failed to add claim.");
+                            }
+                        }
+
+                        // Generate and return a token for the user
+                        return await BuildToken(userCredentials, user);
+                    }
+                    else
+                    {
+                        // User is not approved, return unauthorized
+                        return Unauthorized("User account is not approved.");
+                    }
                 }
                 else
                 {
-                    // User is not approved
-                    return Unauthorized("User account is not approved.");
+                    // User not found
+                    return NotFound("User not found.");
                 }
             }
             else
             {
                 // Login failed, return an error
-                return BadRequest("Incorrect Login");
+                return BadRequest("Incorrect login credentials.");
             }
         }
+
+        [HttpPut("approveLaundryShopAccount/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult> ApproveLaundryShopAccount([FromRoute] Guid id) // Use FromRoute instead of FromBody
+        {
+            // Retrieve the user account by ID
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Check if the user is not already approved
+            if (user.IsApproved)
+            {
+                return BadRequest("User account is already approved.");
+            }
+
+            // Set the user's IsApproved property to true
+            user.IsApproved = true;
+
+            // Update the user account in the database
+            var result = await userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return NoContent(); // Successfully approved, return 204 No Content
+            }
+            else
+            {
+                return BadRequest(result.Errors); // Handle any errors that occurred during update
+            }
+        }
+
+        [HttpGet("listUsers")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult<List<ApplicationUserDTO>>> GetListUsers([FromQuery] PaginationDTO paginationDTO)
+        {
+            // Filter users where UserType equals 'RiderAccount'
+            var queryable = context.Users
+             .Where(x => x.UserType == "LaundryShopAccount" && x.IsApproved == false)  // Add a filter for UserType and IsApproved
+             .AsQueryable();
+
+
+            // Apply pagination headers
+            await HttpContext.InsertParametersPaginationInHeader(queryable);
+
+            // Order the results by Email and paginate
+            var users = await queryable
+                .OrderBy(x => x.Email)
+                .Paginate(paginationDTO)
+                .ToListAsync();
+
+            // Map the result to a list of ApplicationUserDTO and return
+            return mapper.Map<List<ApplicationUserDTO>>(users);
+        }
+
+
+
 
 
     }
