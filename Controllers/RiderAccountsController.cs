@@ -185,19 +185,11 @@ namespace LaundryDashAPI_2.Controllers
                             Password = login.Password
                         };
 
-                        var claims = await userManager.GetClaimsAsync(user);
-
-                        // Check if the role claim "riderAccount" already exists
-                        var hasRiderAccountClaim = claims.Any(c => c.Type == "role" && c.Value == "riderAccount");
-
-                        if (!hasRiderAccountClaim)
+                        // Add the role claim if necessary
+                        var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
+                        if (!claimResult.Succeeded)
                         {
-                            // Add the role claim if it doesn't exist
-                            var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
-                            if (!claimResult.Succeeded)
-                            {
-                                return BadRequest("Failed to add claim.");
-                            }
+                            return BadRequest("Failed to add claim.");
                         }
 
                         // Generate and return a token for the user
