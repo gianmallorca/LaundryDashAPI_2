@@ -84,7 +84,6 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Set the AddedById property to the found user's ID
             laundryServiceLog.AddedById = user.Id;
 
             // Add the entity to the context
