@@ -37,7 +37,7 @@ namespace LaundryDashAPI_2
             // Call the base method to include the default Identity configurations
             base.OnModelCreating(modelBuilder);
 
-            
+
 
             // Configure primary keys for Identity entities if necessary
             modelBuilder.Entity<IdentityUserLogin<string>>()
@@ -48,6 +48,11 @@ namespace LaundryDashAPI_2
 
             modelBuilder.Entity<IdentityUserToken<string>>()
                 .HasKey(token => new { token.UserId, token.LoginProvider, token.Name });
+
+
+            modelBuilder.Entity<LaundryServiceLog>()
+           .Property(l => l.Price)
+           .HasColumnType("decimal(18,2)"); // You can change the precision and scale as needed
 
             // Add additional configurations for other Identity entities as necessary
         }

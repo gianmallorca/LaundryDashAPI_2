@@ -5,8 +5,10 @@ using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LaundryDashAPI_2.Controllers
 {
@@ -19,12 +21,14 @@ namespace LaundryDashAPI_2.Controllers
         private readonly ILogger<LaundryServiceLogController> logger;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly UserManager<ApplicationUser> userManager;
 
-        public LaundryServiceLogController(ILogger<LaundryServiceLogController> logger, ApplicationDbContext context, IMapper mapper)
+        public LaundryServiceLogController(ILogger<LaundryServiceLogController> logger, ApplicationDbContext context, IMapper mapper, UserManager<ApplicationUser> userManager)
         {
             this.logger = logger;
             this.context = context;
             this.mapper = mapper;
+            this.userManager = userManager;
         }
 
         [HttpGet]
@@ -56,20 +60,68 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
+            // Map DTO to entity
             var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 
-            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds; 
-           
-            context.Add(laundryServiceLog);
+            // Assign the service IDs from the DTO
+            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds;
 
+            // Get the email claim from the current user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+
+            // Check if the user was found
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Set the AddedById property to the found user's ID
+            laundryServiceLog.AddedById = user.Id;
+
+            // Add the entity to the context
+            context.LaundryServiceLogs.Add(laundryServiceLog);
+
+            // Save changes to the database
             await context.SaveChangesAsync();
 
             return NoContent();
         }
 
+
         //update only the list of services
         [HttpPut("{id:Guid}")]
-        public async Task<ActionResult> Put(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
+        public async Task<ActionResult> Edit(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
+        {
+            // Find the existing LaundryServiceLog by ID
+            var laundryServiceLog = await context.LaundryServiceLogs
+                .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
+
+            // Check if the log exists
+            if (laundryServiceLog == null)
+            {
+                return NotFound();
+            }
+
+            // Only update the ServiceIds, keeping LaundryShopId unchanged
+            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds;
+
+            // Save the changes to the context
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("{id:Guid}")]
+        public async Task<ActionResult> SavePrice(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID
             var laundryServiceLog = await context.LaundryServiceLogs

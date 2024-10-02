@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LaundryDashAPI_2.Migrations
 {
     /// <inheritdoc />
-    public partial class innitNew : Migration
+    public partial class PriceAndAddedByIdLSSL : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -61,7 +61,7 @@ namespace LaundryDashAPI_2.Migrations
                     LaundryShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LaundryShopName = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AddedById = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -192,7 +192,9 @@ namespace LaundryDashAPI_2.Migrations
                 {
                     LaundryServiceLogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LaundryShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ServiceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    ServiceIds = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -202,12 +204,6 @@ namespace LaundryDashAPI_2.Migrations
                         column: x => x.LaundryShopId,
                         principalTable: "LaundryShops",
                         principalColumn: "LaundryShopId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_LaundryServiceLogs_Services_ServiceId",
-                        column: x => x.ServiceId,
-                        principalTable: "Services",
-                        principalColumn: "ServiceId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -254,11 +250,6 @@ namespace LaundryDashAPI_2.Migrations
                 name: "IX_LaundryServiceLogs_LaundryShopId",
                 table: "LaundryServiceLogs",
                 column: "LaundryShopId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LaundryServiceLogs_ServiceId",
-                table: "LaundryServiceLogs",
-                column: "ServiceId");
         }
 
         /// <inheritdoc />
@@ -283,6 +274,9 @@ namespace LaundryDashAPI_2.Migrations
                 name: "LaundryServiceLogs");
 
             migrationBuilder.DropTable(
+                name: "Services");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -290,9 +284,6 @@ namespace LaundryDashAPI_2.Migrations
 
             migrationBuilder.DropTable(
                 name: "LaundryShops");
-
-            migrationBuilder.DropTable(
-                name: "Services");
         }
     }
 }

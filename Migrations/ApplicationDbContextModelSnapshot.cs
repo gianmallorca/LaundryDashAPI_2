@@ -107,17 +107,21 @@ namespace LaundryDashAPI_2.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AddedById")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("LaundryShopId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal?>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ServiceIds")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("LaundryServiceLogId");
 
                     b.HasIndex("LaundryShopId");
-
-                    b.HasIndex("ServiceId");
 
                     b.ToTable("LaundryServiceLogs");
                 });
@@ -302,15 +306,7 @@ namespace LaundryDashAPI_2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LaundryDashAPI_2.Entities.Service", "Service")
-                        .WithMany("LaundryServiceLogs")
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("LaundryShop");
-
-                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -365,11 +361,6 @@ namespace LaundryDashAPI_2.Migrations
                 });
 
             modelBuilder.Entity("LaundryDashAPI_2.Entities.LaundryShop", b =>
-                {
-                    b.Navigation("LaundryServiceLogs");
-                });
-
-            modelBuilder.Entity("LaundryDashAPI_2.Entities.Service", b =>
                 {
                     b.Navigation("LaundryServiceLogs");
                 });

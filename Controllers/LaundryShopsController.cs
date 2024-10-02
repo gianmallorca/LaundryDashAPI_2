@@ -45,11 +45,32 @@ namespace LaundryDashAPI_2.Controllers
 
         }
 
-        [HttpGet("{Id:Guid}", Name = "getLaundryShopById")]
-      
-        public async Task<ActionResult<LaundryShopDTO>> Get(Guid id)
+
+
+        [HttpGet("getLaundryShopByUserAccountId")]
+        public async Task<ActionResult<LaundryShopDTO>> GetByUserAccountId([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
-            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+            // Get the user's email or ID from the claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Get the laundry shop added by the user, with potential additional filtering from the DTO
+            var laundryShop = await context.LaundryShops
+                .FirstOrDefaultAsync(x => x.AddedById == user.Id &&
+                                          x.LaundryShopName == laundryShopCreationDTO.LaundryShopName);
 
             if (laundryShop == null)
             {
@@ -58,6 +79,8 @@ namespace LaundryDashAPI_2.Controllers
 
             return mapper.Map<LaundryShopDTO>(laundryShop);
         }
+
+
 
         //[HttpPost("createLaundryShop")]
 
