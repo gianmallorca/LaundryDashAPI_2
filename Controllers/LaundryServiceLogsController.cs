@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -119,7 +120,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id:Guid}")]
+        [HttpPut("api/laundryServiceLogs/save-price/{id}")]
         public async Task<ActionResult> SavePrice(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID

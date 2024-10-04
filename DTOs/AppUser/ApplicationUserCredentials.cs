@@ -1,7 +1,7 @@
 ﻿using DataAnnotationsExtensions;
 using System.ComponentModel.DataAnnotations;
 
-namespace LaundryDashAPI_2.DTOs
+namespace LaundryDashAPI_2.DTOs.AppUser
 {
     public class ApplicationUserCredentials
     {
@@ -14,8 +14,8 @@ namespace LaundryDashAPI_2.DTOs
         public string Email { get; set; }
         [Required]
         public string Password { get; set; }
-       
-        
+
+
 
     }
 }

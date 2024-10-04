@@ -2,6 +2,7 @@
 
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,7 +14,7 @@ using System.Security.Claims;
 
 namespace LaundryDashAPI_2.Controllers
 {
-  
+
     [Route("api/laundryShops")]
     [ApiController]
  

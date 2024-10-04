@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.DTOs.AppUser;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

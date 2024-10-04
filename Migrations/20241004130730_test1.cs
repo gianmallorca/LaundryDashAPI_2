@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LaundryDashAPI_2.Migrations
 {
     /// <inheritdoc />
-    public partial class PriceAndAddedByIdLSSL : Migration
+    public partial class test1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

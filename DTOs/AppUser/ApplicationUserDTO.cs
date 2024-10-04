@@ -1,4 +1,4 @@
-﻿namespace LaundryDashAPI_2.DTOs
+﻿namespace LaundryDashAPI_2.DTOs.AppUser
 {
     public class ApplicationUserDTO
     {

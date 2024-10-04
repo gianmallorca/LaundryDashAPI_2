@@ -2,6 +2,7 @@
 using DataAnnotationsExtensions;
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.DTOs.Service;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

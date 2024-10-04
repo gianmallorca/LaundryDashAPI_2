@@ -1,7 +1,7 @@
 ﻿using LaundryDashAPI_2.Validations;
 using System.ComponentModel.DataAnnotations;
 
-namespace LaundryDashAPI_2.DTOs
+namespace LaundryDashAPI_2.DTOs.LaundryShop
 {
     public class LaundryShopCreationDTO
     {
@@ -10,6 +10,6 @@ namespace LaundryDashAPI_2.DTOs
         [FirstLetterUppercase]
         public string LaundryShopName { get; set; }
         public string Address { get; set; }
-        
+
     }
 }

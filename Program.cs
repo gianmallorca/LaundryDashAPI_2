@@ -134,6 +134,7 @@ namespace LaundryDashAPI_2
 
             app.UseHttpsRedirection();
 
+          
             app.UseAuthentication();
 
             app.UseAuthorization();
@@ -143,6 +144,8 @@ namespace LaundryDashAPI_2
             app.MapControllers();
 
             app.Run();
+
+        
         }
     }
 }

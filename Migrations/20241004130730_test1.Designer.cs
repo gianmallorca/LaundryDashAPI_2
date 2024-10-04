@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241002103738_PriceAndAddedByIdLSSL")]
-    partial class PriceAndAddedByIdLSSL
+    [Migration("20241004130730_test1")]
+    partial class test1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
