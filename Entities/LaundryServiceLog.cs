@@ -10,7 +10,7 @@
 
         //Service
         public List<Guid> ?ServiceIds { get; set; }  // Storing multiple service IDs directly
-        public decimal ?Price { get; set; }
+
         public string? AddedById { get; set; }
     }
 }
