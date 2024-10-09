@@ -10,6 +10,7 @@
 
         //Service
         public List<Guid> ServiceIds { get; set; } = new List<Guid>();
+        public decimal ?Price { get; set; }
 
 
         public string? AddedById { get; set; }

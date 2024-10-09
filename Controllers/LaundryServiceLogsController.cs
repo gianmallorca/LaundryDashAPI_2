@@ -68,11 +68,6 @@ namespace LaundryDashAPI_2.Controllers
             {
                 return BadRequest("Request body cannot be null.");
             }
-            // Map DTO to entity
-            var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
-
-            // Assign the service IDs from the DTO
-            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds;
 
             // Get the email claim from the current user
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -92,15 +87,26 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            laundryServiceLog.AddedById = user.Id;
+            // Loop through each service ID and create an individual LaundryServiceLog entry
+            foreach (var serviceId in laundryServiceLogCreationDTO.ServiceIds)
+            {
+                var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 
-            // Add the entity to the context
-            context.LaundryServiceLogs.Add(laundryServiceLog);
+                // Assign the current service ID
+                laundryServiceLog.ServiceIds = new List<Guid> { serviceId }; // Store only the current service ID
+
+                // Set the added by ID
+                laundryServiceLog.AddedById = user.Id;
+
+                // Add the entity to the context
+                context.LaundryServiceLogs.Add(laundryServiceLog);
+            }
 
             // Save changes to the database
             await context.SaveChangesAsync();
 
             return NoContent();
+
         }
 
 
