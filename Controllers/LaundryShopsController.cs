@@ -85,24 +85,6 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        //[HttpPost("createLaundryShop")]
-
-        //public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
-        //{
-        //    var laundryShop = mapper.Map<LaundryShop>(laundryShopCreationDTO);
-
-        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-        //    var user = await userManager.FindByEmailAsync(email);
-
-
-        //    laundryShop.AddedById = user.Id.ToString();
-        //    context.Add(laundryShop);
-        //    await context.SaveChangesAsync();
-
-        //    return NoContent();
-        //}
-
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)

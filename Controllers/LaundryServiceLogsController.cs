@@ -2,6 +2,7 @@
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.DTOs.LaundryServiceLog;
+using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -58,9 +59,14 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //will handle multiple service ids at once
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<ActionResult> Post([FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
+
+            if (laundryServiceLogCreationDTO == null)
+            {
+                return BadRequest("Request body cannot be null.");
+            }
             // Map DTO to entity
             var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 

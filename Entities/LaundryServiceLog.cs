@@ -9,7 +9,8 @@
         public Guid LaundryShopId { get; set; }
 
         //Service
-        public List<Guid> ?ServiceIds { get; set; }  // Storing multiple service IDs directly
+        public List<Guid> ServiceIds { get; set; } = new List<Guid>();
+
 
         public string? AddedById { get; set; }
     }
