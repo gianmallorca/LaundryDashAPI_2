@@ -15,6 +15,7 @@ using System.Security.Claims;
 namespace LaundryDashAPI_2.Controllers
 {
     //[Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/laundryServiceLogs")]
     [ApiController]
     // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
