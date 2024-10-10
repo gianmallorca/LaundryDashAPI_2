@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LaundryDashAPI_2.Controllers
 {
@@ -59,6 +60,40 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+
+
+        //to be fixed if errors on FE, temporary method
+        [HttpGet("{id:Guid}", Name = "getLogByLaundryId")]
+        public async Task<ActionResult<List<Guid>>> GetLogByLaundryId(Guid id)
+        {
+           
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry shop not found.");
+            }
+
+            var laundryServiceLogs = await context.LaundryServiceLogs
+                .Where(log => log.LaundryShopId == laundryShop.LaundryShopId)
+                .ToListAsync();
+
+            List<Guid> allServiceIds = new List<Guid>();
+
+            foreach (var log in laundryServiceLogs)
+            {
+                if (log.ServiceIds != null && log.ServiceIds.Any())
+                {
+                    allServiceIds.AddRange(log.ServiceIds); // Directly add the ServiceIds
+                }
+            }
+
+            return Ok(allServiceIds);
+        }
+
+
+
+
         //will handle multiple service ids at once
         [HttpPost("create")]
         public async Task<ActionResult> Post([FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
@@ -87,18 +122,16 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Loop through each service ID and create an individual LaundryServiceLog entry
+        
             foreach (var serviceId in laundryServiceLogCreationDTO.ServiceIds)
             {
                 var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 
-                // Assign the current service ID
                 laundryServiceLog.ServiceIds = new List<Guid> { serviceId }; // Store only the current service ID
 
-                // Set the added by ID
+           
                 laundryServiceLog.AddedById = user.Id;
 
-                // Add the entity to the context
                 context.LaundryServiceLogs.Add(laundryServiceLog);
             }
 
@@ -134,9 +167,12 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPut("api/laundryServiceLogs/save-price/{id}")]
-        public async Task<ActionResult> SavePrice(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
+        public async Task<ActionResult> SavePrice(Guid id, [FromRoute] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID
+
+
+            //wala pani sure na part, i change ra nako ni (by Gian)
             var laundryServiceLog = await context.LaundryServiceLogs
                 .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
 
@@ -178,5 +214,16 @@ namespace LaundryDashAPI_2.Controllers
 
             return mapper.Map<List<LaundryServiceLogDTO>>(laundryServiceLogs);
         }
+
+
+
+
+
+
+
+       
+
+
+
     }
 }

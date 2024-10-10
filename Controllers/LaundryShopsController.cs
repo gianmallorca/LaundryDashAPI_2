@@ -95,7 +95,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Map the DTO to the entity
-            var laundryShop = mapper.Map<LaundryShop>(laundryShopCreationDTO);
+            var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
 
             // Retrieve the email from the current user's claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
