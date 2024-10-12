@@ -34,8 +34,18 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("getLaundryShop")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
             var queryable = context.LaundryShops.AsQueryable();
             await HttpContext.InsertParametersPaginationInHeader(queryable);
 
@@ -48,11 +58,13 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        [HttpGet("getLaundryShopByUserAccountId")]
-        public async Task<ActionResult<LaundryShopDTO>> GetByUserAccountId([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
+        //  [HttpGet("getLaundryShopByUserAccountId")]
+        // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
+        [HttpGet("getLaundryShopByUserId")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<List<LaundryShopDTO>>> GetByUserAccountId()
         {
-            // Get the user's email or ID from the claims
-            // Retrieve the user's email from the claims
+            // Get the user's email from the claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             // Check if the email is null or empty
@@ -69,19 +81,21 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Query the laundry shop added by the user, filtering only by AddedById
-            var laundryShop = await context.LaundryShops
-                .FirstOrDefaultAsync(x => x.AddedById == user.Id);
+            // Query the laundry shops added by the user, filtering only by AddedById
+            var laundryShops = await context.LaundryShops
+                .Where(x => x.AddedById == user.Id)
+                .ToListAsync();
 
-            if (laundryShop == null)
+            if (laundryShops == null || !laundryShops.Any())
             {
-                return NotFound("Laundry shop not found.");
+                return NotFound("No laundry shops found.");
             }
 
-            // Return the mapped LaundryShopDTO
-            return Ok(mapper.Map<LaundryShopDTO>(laundryShop));
-
+            // Return the mapped LaundryShopDTO list
+            return Ok(mapper.Map<List<LaundryShopDTO>>(laundryShops));
         }
+
+
 
 
 
@@ -159,12 +173,43 @@ namespace LaundryDashAPI_2.Controllers
         [HttpGet("PostGet")]
         [AllowAnonymous]
         
-        public async Task<ActionResult<List<LaundryShopDTO>>> GetCategoriesPostGet()
+        public async Task<ActionResult<List<LaundryShopDTO>>> GetLaundryPostGet()
         {
             var laundryShops = await context.LaundryShops.ToListAsync();
 
             return mapper.Map<List<LaundryShopDTO>>(laundryShops);
         }
+
+        [HttpGet("PostGetTwo")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
+        public async Task<ActionResult<List<LaundryShopDTO>>> LaundryPostGet()
+        {
+            // Get the user's email from the claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Query the laundry shops that were added by the user (filter by AddedById)
+            var laundryShops = await context.LaundryShops
+                .Where(x => x.AddedById == user.Id)  // Filter by user ID
+                .ToListAsync();
+
+            // Return the mapped LaundryShopDTO list
+            return mapper.Map<List<LaundryShopDTO>>(laundryShops);
+        }
+
 
     }
 }
