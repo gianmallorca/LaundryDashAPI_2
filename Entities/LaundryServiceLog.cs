@@ -4,14 +4,20 @@
     {
         public Guid LaundryServiceLogId { get; set; }
 
-        //LaundryShop
+        // LaundryShop
         public LaundryShop LaundryShop { get; set; }
         public Guid LaundryShopId { get; set; }
 
-        //Service
+        // Service IDs
         public List<Guid> ServiceIds { get; set; } = new List<Guid>();
-        public decimal ?Price { get; set; }
 
+        // New property to store the name of the laundry shop
+        public string LaundryShopName { get; set; }
+
+        // New property to store the name of the service
+        public string ServiceName { get; set; }
+
+        public decimal? Price { get; set; }
 
         public string? AddedById { get; set; }
     }
