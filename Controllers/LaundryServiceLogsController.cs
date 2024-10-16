@@ -16,7 +16,7 @@ using System.Text.Json;
 namespace LaundryDashAPI_2.Controllers
 {
     //[Authorize]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/laundryServiceLogs")]
     [ApiController]
     // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
@@ -58,6 +58,36 @@ namespace LaundryDashAPI_2.Controllers
 
             return mapper.Map<LaundryServiceLogDTO>(laundryServiceLog);
         }
+
+
+        //new
+        [HttpGet("manage-prices-by-LaundryId/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetShopToManagePrices(Guid id)
+        {
+            // Retrieve all service logs associated with the given LaundryShopId
+            try
+            {
+                var laundryServiceLogs = await context.LaundryServiceLogs
+                    .Where(x => x.LaundryShopId == id)
+                    .Include(x => x.LaundryShop)
+                    .ToListAsync();
+
+                if (!laundryServiceLogs.Any())
+                {
+                    return NotFound("No service logs found for this laundry shop.");
+                }
+
+                var result = mapper.Map<List<LaundryServiceLogDTO>>(laundryServiceLogs);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+
+        }
+
 
 
 
@@ -177,7 +207,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        [HttpPut("api/laundryServiceLogs/save-price/{id}")]
+        [HttpPut("save-price/{id}")]
         public async Task<ActionResult> SavePrice(Guid id, [FromRoute] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID
@@ -222,8 +252,8 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetServiceLogsPostGet()
         {
             var laundryServiceLogs = await context.LaundryServiceLogs.ToListAsync();
-
             return mapper.Map<List<LaundryServiceLogDTO>>(laundryServiceLogs);
+           
         }
 
 

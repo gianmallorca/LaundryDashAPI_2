@@ -9,6 +9,7 @@
         public Guid LaundryShopId { get; set; }
 
         //Service
+        
         public List<Guid> ServiceIds { get; set; } = new List<Guid>();
         public decimal ?Price { get; set; }
 
