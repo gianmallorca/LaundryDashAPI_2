@@ -47,6 +47,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("getLaundryServiceLog/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<LaundryServiceLogDTO>> Get(Guid id)
         {
             var laundryServiceLog = await context.LaundryServiceLogs.FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
@@ -137,9 +138,9 @@ namespace LaundryDashAPI_2.Controllers
 
         //will handle multiple service ids at once
         [HttpPost("create")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> Post([FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
-
             if (laundryServiceLogCreationDTO == null)
             {
                 return BadRequest("Request body cannot be null.");
@@ -163,14 +164,23 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
+            // Fetch existing LaundryServiceLogs to check if serviceId already exists
+            var existingServiceLogs = await context.LaundryServiceLogs
+                .Where(log => log.LaundryShopId == laundryServiceLogCreationDTO.LaundryShopId)
+                .ToListAsync();
 
             foreach (var serviceId in laundryServiceLogCreationDTO.ServiceIds)
             {
+                // Check if the serviceId already exists in the current LaundryServiceLogs
+                if (existingServiceLogs.Any(log => log.ServiceIds.Contains(serviceId)))
+                {
+                    // If the serviceId already exists, skip this iteration
+                    continue;
+                }
+
                 var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 
                 laundryServiceLog.ServiceIds = new List<Guid> { serviceId }; // Store only the current service ID
-
-
                 laundryServiceLog.AddedById = user.Id;
 
                 context.LaundryServiceLogs.Add(laundryServiceLog);
@@ -180,12 +190,13 @@ namespace LaundryDashAPI_2.Controllers
             await context.SaveChangesAsync();
 
             return NoContent();
-
         }
+
 
 
         //update only the list of services
         [HttpPut("{id:Guid}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> Edit(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID
@@ -208,6 +219,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpPut("save-price/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> SavePrice(Guid id, [FromRoute] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
             // Find the existing LaundryServiceLog by ID
@@ -234,6 +246,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         [HttpDelete("{id:Guid}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> Delete(Guid id)
         {
             var exists = await context.LaundryServiceLogs.AnyAsync(x => x.LaundryServiceLogId == id);
@@ -249,6 +262,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("PostGet")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetServiceLogsPostGet()
         {
             var laundryServiceLogs = await context.LaundryServiceLogs.ToListAsync();
