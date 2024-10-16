@@ -4,7 +4,7 @@
     {
         public Guid LaundryServiceLogId { get; set; }
         public Guid LaundryShopId { get; set; }
-        public Guid ServiceId { get; set; }
+        public List<Guid> ServiceIds { get; set; }
         public decimal? Price { get; set; }
     }
 }
