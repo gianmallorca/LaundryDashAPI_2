@@ -65,32 +65,62 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetShopToManagePrices(Guid id)
         {
-            // Check if the user exists in the database
-            var userExists = await userManager.Users.AnyAsync(x => x.Id == userId.ToString());
-            if (!userExists)
+            // Retrieve all service logs associated with the given LaundryShopId
+            try
             {
-                return NotFound("User not found.");
+                var laundryServiceLogs = await context.LaundryServiceLogs
+                    .Where(x => x.LaundryShopId == id)
+                    .Include(x => x.LaundryShop)
+                    .ToListAsync();
+
+                if (!laundryServiceLogs.Any())
+                {
+                    return NotFound("No service logs found for this laundry shop.");
+                }
+
+                var result = mapper.Map<List<LaundryServiceLogDTO>>(laundryServiceLogs);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
             }
 
-            // Fetch laundry service logs by the user ID
+        }
+
+
+
+
+
+        //to be fixed if errors on FE, temporary method
+        [HttpGet("getLogByLaundryId/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<LaundryServiceLogDTO>> GetLogByLaundryId(Guid id)
+        {
+            // Find the laundry shop by the given ID
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry shop not found.");
+            }
+
+            // Retrieve all service logs for the specified laundry shop
             var laundryServiceLogs = await context.LaundryServiceLogs
-                .Where(log => log.AddedById == userId.ToString()) // Assuming AddedById is of type string
+                .Where(log => log.LaundryShopId == laundryShop.LaundryShopId)
                 .ToListAsync();
 
-            // Check if any logs were found
-            if (!laundryServiceLogs.Any())
+            // Create a list to store all ServiceIds (as Guids)
+            List<Guid> allServiceIds = new List<Guid>();
+
+            // Loop through each service log and add the ServiceIds to the list
+            foreach (var log in laundryServiceLogs)
             {
-                return NotFound("No service logs found for this user.");
+                if (log.ServiceIds != null && log.ServiceIds.Any())
+                {
+                    allServiceIds.AddRange(log.ServiceIds); // Add the ServiceIds directly
+                }
             }
-
-            // Extract and return distinct service IDs
-            var allServiceIds = laundryServiceLogs
-                .SelectMany(log => log.ServiceIds ?? Enumerable.Empty<Guid>()) // Safely handling nulls
-                .Distinct() // Avoid duplicate service IDs
-                .ToList();
-
-            return Ok(allServiceIds);
-        }
 
             // Create and return the combined result (LaundryShop + associated ServiceIds)
             var result = new LaundryServiceLogCreationDTO
@@ -133,14 +163,14 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-        
+
             foreach (var serviceId in laundryServiceLogCreationDTO.ServiceIds)
             {
                 var laundryServiceLog = mapper.Map<LaundryServiceLog>(laundryServiceLogCreationDTO);
 
                 laundryServiceLog.ServiceIds = new List<Guid> { serviceId }; // Store only the current service ID
 
-           
+
                 laundryServiceLog.AddedById = user.Id;
 
                 context.LaundryServiceLogs.Add(laundryServiceLog);
@@ -223,29 +253,10 @@ namespace LaundryDashAPI_2.Controllers
         {
             var laundryServiceLogs = await context.LaundryServiceLogs.ToListAsync();
             return mapper.Map<List<LaundryServiceLogDTO>>(laundryServiceLogs);
+
         }
 
-        // Method to update the price of a specific LaundryServiceLog
-        [HttpPut("update-price/{id:Guid}")]
-        public async Task<ActionResult> UpdatePrice(Guid id, [FromBody] decimal newPrice)
-        {
-            // Find the existing LaundryServiceLog by ID
-            var laundryServiceLog = await context.LaundryServiceLogs
-                .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
 
-            // Check if the log exists
-            if (laundryServiceLog == null)
-            {
-                return NotFound();
-            }
-
-
-
-
-
-
-
-       
 
 
 
