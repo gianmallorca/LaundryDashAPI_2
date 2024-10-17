@@ -16,6 +16,7 @@ namespace LaundryDashAPI_2
         public DbSet<LaundryShop> LaundryShops { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<LaundryServiceLog> LaundryServiceLogs { get; set; }
+        public DbSet<BookingLog> BookingLogs { get; set; }
 
 
         //protected override void OnModelCreating(ModelBuilder modelBuilder)

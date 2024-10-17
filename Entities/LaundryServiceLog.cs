@@ -15,5 +15,8 @@
 
 
         public string? AddedById { get; set; }
+
+
+        public ICollection<BookingLog> BookingLogs { get; set; }
     }
 }
