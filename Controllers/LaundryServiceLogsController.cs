@@ -218,31 +218,26 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
+        
         [HttpPut("save-price/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> SavePrice(Guid id, [FromRoute] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
+        public async Task<ActionResult> SavePrice(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
         {
-            // Find the existing LaundryServiceLog by ID
-
-
-            //wala pani sure na part, i change ra nako ni (by Gian)
             var laundryServiceLog = await context.LaundryServiceLogs
                 .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
 
-            // Check if the log exists
             if (laundryServiceLog == null)
             {
-                return NotFound();
+                return NotFound("Laundry service log not found.");
             }
 
-            // Only update the ServiceIds, keeping LaundryShopId unchanged
-            laundryServiceLog.ServiceIds = laundryServiceLogCreationDTO.ServiceIds;
+            laundryServiceLog.Price = laundryServiceLogCreationDTO.Price;
 
-            // Save the changes to the context
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
 
         [HttpDelete("{id:Guid}")]
