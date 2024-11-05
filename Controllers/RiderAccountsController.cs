@@ -100,30 +100,30 @@ namespace LaundryDashAPI_2.Controllers
 
             if (result.Succeeded)
             {
-                // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
                 if (user != null)
                 {
-                    // Check if the user is approved
                     if (user.IsApproved)
                     {
-                        // Convert ApplicationUserLogin to ApplicationUserCredentials
+                        // Ensure only rider accounts are allowed here
+                        if (user.UserType != "RiderAccount")
+                        {
+                            return Unauthorized("Incorrect user type.");
+                        }
+
                         var userCredentials = new ApplicationUserCredentials
                         {
                             Email = login.Email,
                             Password = login.Password
                         };
 
-                        // Get the user's claims
                         var claims = await userManager.GetClaimsAsync(user);
 
-                        // Check if the role claim "riderAccount" already exists
                         var hasRiderAccountClaim = claims.Any(c => c.Type == "role" && c.Value == "riderAccount");
 
                         if (!hasRiderAccountClaim)
                         {
-                            // Add the role claim if it doesn't exist
                             var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "riderAccount"));
                             if (!claimResult.Succeeded)
                             {
@@ -131,28 +131,24 @@ namespace LaundryDashAPI_2.Controllers
                             }
                         }
 
-                        // Generate and return a token for the user
                         return await BuildToken(userCredentials, user);
                     }
                     else
                     {
-                        // User is not approved, return unauthorized
                         return Unauthorized("User account is not approved.");
                     }
                 }
                 else
                 {
-                    // User not found
                     return NotFound("User not found.");
                 }
             }
             else
             {
-                // Login failed, return an error
                 return BadRequest("Incorrect login credentials.");
             }
-
         }
+
 
         [HttpPut("approveRiderAccount/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]

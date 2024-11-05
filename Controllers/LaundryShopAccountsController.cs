@@ -96,60 +96,41 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] ApplicationUserLogin login)
         {
-            // Attempt to sign in the user with the provided credentials
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
-                // Find the user by their email
                 var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
 
                 if (user != null)
                 {
-                    // Check if the user is approved
                     if (user.IsApproved)
                     {
-                        // Convert ApplicationUserLogin to ApplicationUserCredentials
+                        if (user.UserType != "LaundryShopAccount")
+                        {
+                            return Unauthorized("Incorrect User! Please Login with a Laundry Shop Account.");
+                        }
+
                         var userCredentials = new ApplicationUserCredentials
                         {
                             Email = login.Email,
                             Password = login.Password
                         };
 
-                        // Get the user's claims
-                        var claims = await userManager.GetClaimsAsync(user);
-
-                        // Check if the role claim "laundryShopAccount" already exists
-                        var hasLaundryShopAccountClaim = claims.Any(c => c.Type == "role" && c.Value == "laundryShopAccount");
-
-                        if (!hasLaundryShopAccountClaim)
-                        {
-                            // Add the role claim if it doesn't exist
-                            var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
-                            if (!claimResult.Succeeded)
-                            {
-                                return BadRequest("Failed to add claim.");
-                            }
-                        }
-
-                        // Generate and return a token for the user
                         return await BuildToken(userCredentials, user);
                     }
                     else
                     {
-                        // User is not approved, return unauthorized
                         return Unauthorized("User account is not approved.");
                     }
                 }
                 else
                 {
-                    // User not found
                     return NotFound("User not found.");
                 }
             }
             else
             {
-                // Login failed, return an error
                 return BadRequest("Incorrect login credentials.");
             }
         }
