@@ -74,7 +74,13 @@ namespace LaundryDashAPI_2.Controllers
                 UserName = riderUserCredentials.Email,
                 Email = riderUserCredentials.Email,
                 UserType = "RiderAccount",
-                IsApproved = false // User is not approved by default
+                IsApproved = false, // User is not approved by default
+                Birthday = riderUserCredentials.Birthday,
+                Age = riderUserCredentials.Age,
+                Gender = riderUserCredentials.Gender,
+                City = riderUserCredentials.City,
+                Barangay = riderUserCredentials.Barangay,
+                BrgyStreet = riderUserCredentials.BrgyStreet
             };
 
             // Attempt to create the user

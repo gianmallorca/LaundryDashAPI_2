@@ -73,7 +73,13 @@ namespace LaundryDashAPI_2.Controllers
                 UserName = laundryShopUserCredentials.Email,
                 Email = laundryShopUserCredentials.Email,
                 UserType = "LaundryShopAccount",
-                IsApproved = false // User is not approved by default
+                IsApproved = false, // User is not approved by default
+                Birthday = laundryShopUserCredentials.Birthday,
+                Age = laundryShopUserCredentials.Age,
+                Gender = laundryShopUserCredentials.Gender,
+                City = laundryShopUserCredentials.City,
+                Barangay = laundryShopUserCredentials.Barangay,
+                BrgyStreet = laundryShopUserCredentials.BrgyStreet
             };
 
             // Attempt to create the user
