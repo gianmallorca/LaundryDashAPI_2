@@ -4,6 +4,7 @@ using LaundryDashAPI_2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241107091832_IsApprovedByAdminPropInLaundryShop")]
+    partial class IsApprovedByAdminPropInLaundryShop
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -224,10 +227,10 @@ namespace LaundryDashAPI_2.Migrations
                     b.Property<string>("ContactNum")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("Friday")
+                    b.Property<bool?>("Friday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsApprovedByAdmin")
+                    b.Property<bool?>("IsApprovedByAdmin")
                         .HasColumnType("bit");
 
                     b.Property<string>("LaundryShopName")
@@ -235,16 +238,16 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<bool>("Monday")
+                    b.Property<bool?>("Monday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("Saturday")
+                    b.Property<bool?>("Saturday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("Sunday")
+                    b.Property<bool?>("Sunday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("Thursday")
+                    b.Property<bool?>("Thursday")
                         .HasColumnType("bit");
 
                     b.Property<string>("TimeClose")
@@ -253,10 +256,10 @@ namespace LaundryDashAPI_2.Migrations
                     b.Property<string>("TimeOpen")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("Tuesday")
+                    b.Property<bool?>("Tuesday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("Wednesday")
+                    b.Property<bool?>("Wednesday")
                         .HasColumnType("bit");
 
                     b.HasKey("LaundryShopId");

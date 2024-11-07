@@ -39,6 +39,8 @@ namespace LaundryDashAPI_2.Entities
 
         public string? AddedById { get; set; }
 
-        public ICollection<LaundryServiceLog>LaundryServiceLogs { get; set; }
+        public bool IsApprovedByAdmin { get; set; }
+
+        public ICollection<LaundryServiceLog> LaundryServiceLogs { get; set; }
     }
 }

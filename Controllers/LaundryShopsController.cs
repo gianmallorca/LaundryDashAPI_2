@@ -46,7 +46,9 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
+
             var queryable = context.LaundryShops.AsQueryable();
+            queryable = queryable.Where(x => x.IsApprovedByAdmin == true);
             await HttpContext.InsertParametersPaginationInHeader(queryable);
 
             var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
@@ -111,6 +113,9 @@ namespace LaundryDashAPI_2.Controllers
             // Map the DTO to the entity
             var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
 
+            // Set IsApprovedByAdmin to false by default
+            laundryShop.IsApprovedByAdmin = false;
+
             // Retrieve the email from the current user's claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -136,6 +141,58 @@ namespace LaundryDashAPI_2.Controllers
 
             return NoContent();
         }
+
+
+        [HttpGet("getPendingLaundryShops")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult<List<LaundryShopDTO>>> GetPendingLaundryShops([FromQuery] PaginationDTO paginationDTO)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var queryable = context.LaundryShops
+                .Where(x => x.IsApprovedByAdmin == false) // Only retrieve shops where IsApprovedByAdmin is false
+                .AsQueryable();
+
+            await HttpContext.InsertParametersPaginationInHeader(queryable);
+
+            var laundryShops = await queryable
+                .OrderBy(x => x.LaundryShopName) // You can modify sorting based on your needs
+                .Paginate(paginationDTO)
+                .ToListAsync();
+
+            return mapper.Map<List<LaundryShopDTO>>(laundryShops);
+        }
+
+
+        [HttpPut("approveLaundryShop/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult> ApproveLaundryShop(Guid id)
+        {
+            // Retrieve the LaundryShop based on the given id
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+
+            // Check if the LaundryShop exists
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry Shop not found.");
+            }
+
+            // Update the IsApprovedByAdmin property to true
+            laundryShop.IsApprovedByAdmin = true;
+
+            // Save the changes to the database
+            await context.SaveChangesAsync();
+
+            // Return NoContent (successful update)
+            return NoContent();
+        }
+
 
 
         [HttpPut("{id:Guid}", Name ="editLaundryShop")]

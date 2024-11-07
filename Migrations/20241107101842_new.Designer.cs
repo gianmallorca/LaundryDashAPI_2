@@ -4,6 +4,7 @@ using LaundryDashAPI_2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241107101842_new")]
+    partial class @new
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -125,7 +128,7 @@ namespace LaundryDashAPI_2.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool?>("AcceptedByRider")
+                    b.Property<bool>("AcceptedByRider")
                         .HasColumnType("bit");
 
                     b.Property<string>("ClientId")
@@ -137,10 +140,10 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<bool?>("DepartedFromShop")
+                    b.Property<bool>("DepartedFromShop")
                         .HasColumnType("bit");
 
-                    b.Property<bool?>("IsAccepted")
+                    b.Property<bool>("IsAccepted")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("LaundryServiceLogId")
@@ -155,7 +158,7 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<bool?>("ReceivedByClient")
+                    b.Property<bool>("ReceivedByClient")
                         .HasColumnType("bit");
 
                     b.Property<string>("RiderId")
