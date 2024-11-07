@@ -72,14 +72,15 @@ namespace LaundryDashAPI_2.Migrations
                     ContactNum = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TimeOpen = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TimeClose = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Monday = table.Column<bool>(type: "bit", nullable: true),
-                    Tuesday = table.Column<bool>(type: "bit", nullable: true),
-                    Wednesday = table.Column<bool>(type: "bit", nullable: true),
-                    Thursday = table.Column<bool>(type: "bit", nullable: true),
-                    Friday = table.Column<bool>(type: "bit", nullable: true),
-                    Saturday = table.Column<bool>(type: "bit", nullable: true),
-                    Sunday = table.Column<bool>(type: "bit", nullable: true),
-                    AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Monday = table.Column<bool>(type: "bit", nullable: false),
+                    Tuesday = table.Column<bool>(type: "bit", nullable: false),
+                    Wednesday = table.Column<bool>(type: "bit", nullable: false),
+                    Thursday = table.Column<bool>(type: "bit", nullable: false),
+                    Friday = table.Column<bool>(type: "bit", nullable: false),
+                    Saturday = table.Column<bool>(type: "bit", nullable: false),
+                    Sunday = table.Column<bool>(type: "bit", nullable: false),
+                    AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsVerifiedByAdmin = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {

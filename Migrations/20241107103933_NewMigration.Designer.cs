@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241107101842_new")]
-    partial class @new
+    [Migration("20241107103933_NewMigration")]
+    partial class NewMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -128,7 +128,7 @@ namespace LaundryDashAPI_2.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("AcceptedByRider")
+                    b.Property<bool?>("AcceptedByRider")
                         .HasColumnType("bit");
 
                     b.Property<string>("ClientId")
@@ -140,10 +140,10 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<bool>("DepartedFromShop")
+                    b.Property<bool?>("DepartedFromShop")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsAccepted")
+                    b.Property<bool?>("IsAccepted")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("LaundryServiceLogId")
@@ -158,7 +158,7 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<bool>("ReceivedByClient")
+                    b.Property<bool?>("ReceivedByClient")
                         .HasColumnType("bit");
 
                     b.Property<string>("RiderId")
@@ -230,7 +230,7 @@ namespace LaundryDashAPI_2.Migrations
                     b.Property<bool>("Friday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsApprovedByAdmin")
+                    b.Property<bool>("IsVerifiedByAdmin")
                         .HasColumnType("bit");
 
                     b.Property<string>("LaundryShopName")

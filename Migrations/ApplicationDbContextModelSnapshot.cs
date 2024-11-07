@@ -227,7 +227,7 @@ namespace LaundryDashAPI_2.Migrations
                     b.Property<bool>("Friday")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsApprovedByAdmin")
+                    b.Property<bool>("IsVerifiedByAdmin")
                         .HasColumnType("bit");
 
                     b.Property<string>("LaundryShopName")

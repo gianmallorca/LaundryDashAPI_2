@@ -48,7 +48,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
             var queryable = context.LaundryShops.AsQueryable();
-            queryable = queryable.Where(x => x.IsApprovedByAdmin == true);
+            queryable = queryable.Where(x => x.IsVerifiedByAdmin == true);
             await HttpContext.InsertParametersPaginationInHeader(queryable);
 
             var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
@@ -114,7 +114,7 @@ namespace LaundryDashAPI_2.Controllers
             var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
 
             // Set IsApprovedByAdmin to false by default
-            laundryShop.IsApprovedByAdmin = false;
+            laundryShop.IsVerifiedByAdmin = false;
 
             // Retrieve the email from the current user's claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -156,7 +156,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var queryable = context.LaundryShops
-                .Where(x => x.IsApprovedByAdmin == false) // Only retrieve shops where IsApprovedByAdmin is false
+                .Where(x => x.IsVerifiedByAdmin == false) // Only retrieve shops where IsApprovedByAdmin is false
                 .AsQueryable();
 
             await HttpContext.InsertParametersPaginationInHeader(queryable);
@@ -184,7 +184,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Update the IsApprovedByAdmin property to true
-            laundryShop.IsApprovedByAdmin = true;
+            laundryShop.IsVerifiedByAdmin = true;
 
             // Save the changes to the database
             await context.SaveChangesAsync();
