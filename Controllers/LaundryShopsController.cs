@@ -267,8 +267,8 @@ namespace LaundryDashAPI_2.Controllers
 
             // If not an admin, return only the laundry shops added by the current user
             var laundryShops = await context.LaundryShops
-                .Where(x => x.AddedById == user.Id)
-                .ToListAsync();
+            .Where(x => x.AddedById == user.Id && x.IsVerifiedByAdmin == true)
+            .ToListAsync();
 
             return mapper.Map<List<LaundryShopDTO>>(laundryShops);
         }
