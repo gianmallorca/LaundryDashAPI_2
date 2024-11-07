@@ -85,8 +85,8 @@ namespace LaundryDashAPI_2.Controllers
 
             // Query the laundry shops added by the user, filtering only by AddedById
             var laundryShops = await context.LaundryShops
-                .Where(x => x.AddedById == user.Id)
-                .ToListAsync();
+            .Where(x => x.AddedById == user.Id && x.IsVerifiedByAdmin == true)
+            .ToListAsync();
 
             if (laundryShops == null || !laundryShops.Any())
             {
