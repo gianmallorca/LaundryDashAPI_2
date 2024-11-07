@@ -1,4 +1,6 @@
 ﻿using LaundryDashAPI_2.Validations;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using System.ComponentModel.DataAnnotations;
 
 namespace LaundryDashAPI_2.Entities
@@ -7,10 +9,9 @@ namespace LaundryDashAPI_2.Entities
     {
         public Guid BookingLogId { get; set; }
 
-
         public Guid LaundryServiceLogId { get; set; }
         public LaundryServiceLog LaundryServiceLog { get; set; }
-
+        public string LaundryShopName { get; set; }
 
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(120)]
@@ -21,7 +22,14 @@ namespace LaundryDashAPI_2.Entities
         [StringLength(120)]
         [FirstLetterUppercase]
         public string DeliveryAddress { get; set; }
+
         public string ClientId { get; set; }
+
         public bool ?IsAccepted { get; set; }
+        public bool? DepartedFromShop { get; set; }
+        public bool? AcceptedByRider { get; set; }
+        public bool? ReceivedByClient { get; set; }
+        
+        public string? RiderId { get; set; }
     }
 }
