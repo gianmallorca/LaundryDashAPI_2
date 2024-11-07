@@ -13,6 +13,9 @@ namespace LaundryDashAPI_2.Entities
         public LaundryServiceLog LaundryServiceLog { get; set; }
         public string LaundryShopName { get; set; }
 
+        public decimal? TotalPrice { get; set; }
+        public decimal? Weight { get; set; }
+
         [Required(ErrorMessage = "The field {0} is required")]
         [StringLength(120)]
         [FirstLetterUppercase]

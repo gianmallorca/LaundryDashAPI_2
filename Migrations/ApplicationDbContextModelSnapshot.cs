@@ -125,6 +125,9 @@ namespace LaundryDashAPI_2.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool?>("AcceptedByRider")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ClientId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -134,16 +137,35 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<bool?>("DepartedFromShop")
+                        .HasColumnType("bit");
+
                     b.Property<bool?>("IsAccepted")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("LaundryServiceLogId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("LaundryShopName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PickupAddress")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
+
+                    b.Property<bool?>("ReceivedByClient")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RiderId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Weight")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("BookingLogId");
 

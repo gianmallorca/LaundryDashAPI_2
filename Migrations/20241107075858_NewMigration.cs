@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LaundryDashAPI_2.Migrations
 {
     /// <inheritdoc />
-    public partial class test1 : Migration
+    public partial class NewMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -32,6 +32,12 @@ namespace LaundryDashAPI_2.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Birthday = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Age = table.Column<int>(type: "int", nullable: true),
+                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    City = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Barangay = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BrgyStreet = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsApproved = table.Column<bool>(type: "bit", nullable: false),
                     UserType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -60,7 +66,19 @@ namespace LaundryDashAPI_2.Migrations
                 {
                     LaundryShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LaundryShopName = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    City = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Barangay = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BrgyStreet = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ContactNum = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TimeOpen = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TimeClose = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Monday = table.Column<bool>(type: "bit", nullable: true),
+                    Tuesday = table.Column<bool>(type: "bit", nullable: true),
+                    Wednesday = table.Column<bool>(type: "bit", nullable: true),
+                    Thursday = table.Column<bool>(type: "bit", nullable: true),
+                    Friday = table.Column<bool>(type: "bit", nullable: true),
+                    Saturday = table.Column<bool>(type: "bit", nullable: true),
+                    Sunday = table.Column<bool>(type: "bit", nullable: true),
                     AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -192,7 +210,7 @@ namespace LaundryDashAPI_2.Migrations
                 {
                     LaundryServiceLogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LaundryShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ServiceIds = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ServiceIds = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     AddedById = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -204,6 +222,35 @@ namespace LaundryDashAPI_2.Migrations
                         column: x => x.LaundryShopId,
                         principalTable: "LaundryShops",
                         principalColumn: "LaundryShopId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BookingLogs",
+                columns: table => new
+                {
+                    BookingLogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LaundryServiceLogId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LaundryShopName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Weight = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PickupAddress = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
+                    DeliveryAddress = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
+                    ClientId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsAccepted = table.Column<bool>(type: "bit", nullable: true),
+                    DepartedFromShop = table.Column<bool>(type: "bit", nullable: true),
+                    AcceptedByRider = table.Column<bool>(type: "bit", nullable: true),
+                    ReceivedByClient = table.Column<bool>(type: "bit", nullable: true),
+                    RiderId = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingLogs", x => x.BookingLogId);
+                    table.ForeignKey(
+                        name: "FK_BookingLogs_LaundryServiceLogs_LaundryServiceLogId",
+                        column: x => x.LaundryServiceLogId,
+                        principalTable: "LaundryServiceLogs",
+                        principalColumn: "LaundryServiceLogId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -247,6 +294,11 @@ namespace LaundryDashAPI_2.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_BookingLogs_LaundryServiceLogId",
+                table: "BookingLogs",
+                column: "LaundryServiceLogId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LaundryServiceLogs_LaundryShopId",
                 table: "LaundryServiceLogs",
                 column: "LaundryShopId");
@@ -271,7 +323,7 @@ namespace LaundryDashAPI_2.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "LaundryServiceLogs");
+                name: "BookingLogs");
 
             migrationBuilder.DropTable(
                 name: "Services");
@@ -281,6 +333,9 @@ namespace LaundryDashAPI_2.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "LaundryServiceLogs");
 
             migrationBuilder.DropTable(
                 name: "LaundryShops");
