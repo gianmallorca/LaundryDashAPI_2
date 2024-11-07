@@ -104,42 +104,50 @@ namespace LaundryDashAPI_2.Controllers
         {
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent: false, lockoutOnFailure: false);
 
-            if (result.Succeeded)
-            {
-                var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
-
-                if (user != null)
-                {
-                    if (user.IsApproved)
-                    {
-                        if (user.UserType != "LaundryShopAccount")
-                        {
-                            return Unauthorized("Incorrect User! Please Login with a Laundry Shop Account.");
-                        }
-
-                        var userCredentials = new ApplicationUserCredentials
-                        {
-                            Email = login.Email,
-                            Password = login.Password
-                        };
-
-                        return await BuildToken(userCredentials, user);
-                    }
-                    else
-                    {
-                        return Unauthorized("User account is not approved.");
-                    }
-                }
-                else
-                {
-                    return NotFound("User not found.");
-                }
-            }
-            else
+            if (!result.Succeeded)
             {
                 return BadRequest("Incorrect login credentials.");
             }
+
+            var user = await userManager.FindByEmailAsync(login.Email) as ApplicationUser;
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            if (!user.IsApproved)
+            {
+                return Unauthorized("User account is not approved.");
+            }
+
+            if (user.UserType != "LaundryShopAccount")
+            {
+                return Unauthorized("Incorrect User! Please login with a Laundry Shop Account.");
+            }
+
+            // Check if the "laundryShopAccount" role claim already exists
+            var claims = await userManager.GetClaimsAsync(user);
+            if (!claims.Any(c => c.Type == "role" && c.Value == "laundryShopAccount"))
+            {
+                var claimResult = await userManager.AddClaimAsync(user, new Claim("role", "laundryShopAccount"));
+                if (!claimResult.Succeeded)
+                {
+                    return BadRequest("Failed to add claim.");
+                }
+            }
+
+            // Build and return the token if all conditions are met
+            var userCredentials = new ApplicationUserCredentials
+            {
+                Email = login.Email,
+                Password = login.Password
+            };
+            return await BuildToken(userCredentials, user);
         }
+
+
+
 
         [HttpPut("approveLaundryShopAccount/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
