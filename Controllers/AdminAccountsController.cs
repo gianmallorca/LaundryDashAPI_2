@@ -108,7 +108,13 @@ namespace LaundryDashAPI_2.Controllers
                 UserName = adminUserCredentials.Email,
                 Email = adminUserCredentials.Email,
                 UserType = "Admin",
-                IsApproved = true // Set default approval status to true
+                IsApproved = true, // Set default approval status to true
+                Birthday = adminUserCredentials.Birthday,
+                Age = adminUserCredentials.Age,
+                Gender = adminUserCredentials.Gender,
+                City = adminUserCredentials.City,
+                Barangay = adminUserCredentials.Barangay,
+                BrgyStreet = adminUserCredentials.BrgyStreet
             };
 
             // Attempt to create the user

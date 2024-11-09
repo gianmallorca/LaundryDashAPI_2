@@ -22,7 +22,7 @@ namespace LaundryDashAPI_2.Entities
         {
             get
             {
-                return $"{City},{Barangay}, {BrgyStreet}";
+                return $"{City}, {Barangay}, {BrgyStreet}";
             }
         }
 
