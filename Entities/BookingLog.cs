@@ -26,6 +26,8 @@ namespace LaundryDashAPI_2.Entities
         [FirstLetterUppercase]
         public string DeliveryAddress { get; set; }
 
+        public string? Note { get; set; }
+
         public string ClientId { get; set; }
 
         public bool ?IsAccepted { get; set; }
