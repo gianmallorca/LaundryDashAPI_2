@@ -3,6 +3,7 @@ using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.DTOs.LaundryShop;
+using LaundryDashAPI_2.DTOs.Service;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -96,7 +97,7 @@ namespace LaundryDashAPI_2.Controllers
         //to be tested, created 11/13/2024
         [HttpGet("getServiceIdsByLaundryShop/{laundryShopId}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<List<Guid>>> GetServiceIdsByLaundryShop(Guid laundryShopId)
+        public async Task<ActionResult<List<ServiceDTO>>> GetServiceIdsByLaundryShop(Guid laundryShopId)
         {
             // Retrieve the LaundryShop by its Id
             var laundryShop = await context.LaundryShops
@@ -112,16 +113,27 @@ namespace LaundryDashAPI_2.Controllers
                 .Where(log => log.LaundryShopId == laundryShop.LaundryShopId)
                 .ToListAsync();
 
-            
+            // Extract all distinct ServiceIds from LaundryServiceLogs
             var allServiceIds = laundryServiceLogs
-                .Where(log => log.ServiceIds != null && log.ServiceIds.Any())  
-                .SelectMany(log => log.ServiceIds)  
-                .Distinct() 
+                .Where(log => log.ServiceIds != null && log.ServiceIds.Any())
+                .SelectMany(log => log.ServiceIds)
+                .Distinct()
                 .ToList();
 
-            // Return the list of ServiceIds
-            return Ok(allServiceIds);
+            // Retrieve ServiceNames for all distinct ServiceIds
+            var services = await context.Services
+                .Where(service => allServiceIds.Contains(service.ServiceId) && service.IsActive)  // Ensure services are active
+                .Select(service => new ServiceDTO
+                {
+                    ServiceId = service.ServiceId,
+                    ServiceName = service.ServiceName
+                })
+                .ToListAsync();
+
+            // Return the list of ServiceDTOs (ServiceIds with corresponding names)
+            return Ok(services);
         }
+
 
 
 
