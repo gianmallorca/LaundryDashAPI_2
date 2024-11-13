@@ -41,6 +41,22 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<ServiceDTO>>(services);
         }
 
+        [HttpGet("GetActiveServices")]
+        public async Task<ActionResult<List<ServiceDTO>>> GetActiveServices([FromQuery] PaginationDTO paginationDTO)
+        {
+            var queryable = context.Services.AsQueryable();
+            await HttpContext.InsertParametersPaginationInHeader(queryable);
+
+                    var services = await queryable
+                         .Where(x => x.IsActive == true)  // Filter to only include active services
+                         .OrderBy(x => x.ServiceName)     // Sort the results by ServiceName
+                         .Paginate(paginationDTO)         // Apply pagination
+                         .ToListAsync();                  // Execute the query asynchronously
+
+
+            return mapper.Map<List<ServiceDTO>>(services);
+        }
+
         [HttpGet("{Id:Guid}"    , Name = "getServices")]
         public async Task<ActionResult<ServiceDTO>> Get(Guid id)
         {

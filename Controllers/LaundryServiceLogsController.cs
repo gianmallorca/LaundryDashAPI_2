@@ -93,45 +93,36 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        //to be fixed if errors on FE, temporary method
-        [HttpGet("getLogByLaundryId/{id}")]
+        //to be tested, created 11/13/2024
+        [HttpGet("getServiceIdsByLaundryShop/{laundryShopId}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<LaundryServiceLogDTO>> GetLogByLaundryId(Guid id)
+        public async Task<ActionResult<List<Guid>>> GetServiceIdsByLaundryShop(Guid laundryShopId)
         {
-            // Find the laundry shop by the given ID
-            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+            // Retrieve the LaundryShop by its Id
+            var laundryShop = await context.LaundryShops
+                .FirstOrDefaultAsync(x => x.LaundryShopId == laundryShopId);
 
             if (laundryShop == null)
             {
                 return NotFound("Laundry shop not found.");
             }
 
-            // Retrieve all service logs for the specified laundry shop
+            // Retrieve all related LaundryServiceLogs for the given LaundryShopId
             var laundryServiceLogs = await context.LaundryServiceLogs
                 .Where(log => log.LaundryShopId == laundryShop.LaundryShopId)
                 .ToListAsync();
 
-            // Create a list to store all ServiceIds (as Guids)
-            List<Guid> allServiceIds = new List<Guid>();
+            
+            var allServiceIds = laundryServiceLogs
+                .Where(log => log.ServiceIds != null && log.ServiceIds.Any())  
+                .SelectMany(log => log.ServiceIds)  
+                .Distinct() 
+                .ToList();
 
-            // Loop through each service log and add the ServiceIds to the list
-            foreach (var log in laundryServiceLogs)
-            {
-                if (log.ServiceIds != null && log.ServiceIds.Any())
-                {
-                    allServiceIds.AddRange(log.ServiceIds); // Add the ServiceIds directly
-                }
-            }
-
-            // Create and return the combined result (LaundryShop + associated ServiceIds)
-            var result = new LaundryServiceLogCreationDTO
-            {
-                LaundryShopId = laundryShop.LaundryShopId,    // Return the laundry shop information
-                ServiceIds = allServiceIds    // Return the associated ServiceIds as a list of Guids
-            };
-
-            return Ok(result);
+            // Return the list of ServiceIds
+            return Ok(allServiceIds);
         }
+
 
 
 
