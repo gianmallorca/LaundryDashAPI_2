@@ -47,9 +47,9 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<BookingLogDTO>>(bookingLogs);
         }
 
-        
+
         [HttpPost("create")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
         public async Task<ActionResult> Post([FromBody] BookingLogCreationDTO bookingLogCreationDTO)
         {
             if (bookingLogCreationDTO == null)
@@ -75,42 +75,69 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
+            // Retrieve the LaundryServiceLog associated with the given LaundryServiceLogId
+            var laundryServiceLog = await context.LaundryServiceLogs
+                .Include(log => log.LaundryShop) // Ensure related LaundryShop is included
+                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogCreationDTO.LaundryServiceLogId);
+
+            if (laundryServiceLog == null || laundryServiceLog.LaundryShop == null)
+            {
+                return NotFound("Laundry service log or related laundry shop not found.");
+            }
+
             // Map the incoming DTO to the BookingLog entity
             var bookingLog = new BookingLog
             {
                 BookingLogId = Guid.NewGuid(), // Generate new BookingLogId
                 LaundryServiceLogId = bookingLogCreationDTO.LaundryServiceLogId, // Set the associated LaundryServiceLogId
+                LaundryShopName = laundryServiceLog.LaundryShop.LaundryShopName, // Extract LaundryShopName from related LaundryShop
+                BookingDate = DateTime.UtcNow, // Automatically set the BookingDate to the current UTC time
                 PickupAddress = bookingLogCreationDTO.PickupAddress,
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
+                Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
-                IsAccepted = false // set default as false
+                IsAccepted = false // Set default as false
             };
 
-           
+
+            // Add the new booking log to the context
             context.BookingLogs.Add(bookingLog);
 
+            // Save changes to the database
             await context.SaveChangesAsync();
 
+            // Return a NoContent response (status code 204)
             return NoContent();
         }
 
 
 
 
-        //update only the list of services
-        [HttpPut("{id:Guid}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> Edit(Guid id, [FromRoute] BookingLogCreationDTO bookingLogCreationDTO)
+
+        //get pending bookings
+        [HttpGet("getPendingBookings")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
         {
-          
-            return NoContent();
-        }
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-       
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var pendingBookings = await context.BookingLogs
+                .Where(x => x.IsAccepted == false) 
+                .OrderBy(x => x.BookingDate)      
+                .ToListAsync();                   
+
+            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        }
 
 
         [HttpDelete("{id:Guid}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
         public async Task<ActionResult> Delete(Guid id)
         {
             
@@ -118,7 +145,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("PostGet")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> GetBookingLogsPostGet()
         {
             var bookingLogs = await context.LaundryServiceLogs.ToListAsync();

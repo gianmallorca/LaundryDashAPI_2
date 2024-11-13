@@ -7,5 +7,7 @@ namespace LaundryDashAPI_2.DTOs.Service
         [Required]
         [StringLength(50)]
         public string ServiceName { get; set; }
+
+        public bool IsActive { get; set; }
     }
 }

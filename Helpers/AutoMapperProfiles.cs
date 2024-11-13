@@ -1,6 +1,7 @@
 ﻿
 using AutoMapper;
 using LaundryDashAPI_2.DTOs.AppUser;
+using LaundryDashAPI_2.DTOs.BookingLog;
 using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.DTOs.Service;
@@ -18,6 +19,9 @@ namespace LaundryDashAPI_2.Helpers
 
             CreateMap<LaundryShopDTO, LaundryShop>().ReverseMap();
             CreateMap<LaundryShopCreationDTO, LaundryShop>();
+
+            CreateMap<BookingLogDTO, BookingLog>().ReverseMap();
+            CreateMap<BookingLogCreationDTO, BookingLog>();
 
             CreateMap<LaundryServiceLog, LaundryServiceLogDTO>();
             CreateMap<LaundryServiceLogCreationDTO, LaundryServiceLog>()

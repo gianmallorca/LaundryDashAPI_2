@@ -38,10 +38,21 @@ namespace LaundryDashAPI_2.DTOs.AppUser
         // Address formatting
         public string Address => $"{City}, {Barangay}, {BrgyStreet}";
 
+        //laundry shop account prop
+        public string? TaxIdentificationNumber { get; set; }
+        public string? BusinessPermitNumber { get; set; }
+
+        //rider account prop
+        public string? VehicleType { get; set; }
+        public decimal? VehicleCapacity { get; set; }
+        public string? DriversLicenseNumber { get; set; }
+
         [Required]
         [Email]
         public string Email { get; set; }
         [Required]
         public string Password { get; set; }
+        [Required]
+        public string ConfirmPassword { get; set; }
     }
 }

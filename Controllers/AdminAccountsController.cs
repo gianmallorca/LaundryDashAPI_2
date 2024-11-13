@@ -100,6 +100,10 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
         {
+            if (adminUserCredentials.Password != adminUserCredentials.ConfirmPassword)
+            {
+                return BadRequest("Password and Confirm Password do not match.");
+            }
             // Create a new ApplicationUser with the provided credentials
             var user = new ApplicationUser
             {

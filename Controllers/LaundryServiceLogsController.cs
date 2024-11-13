@@ -182,6 +182,7 @@ namespace LaundryDashAPI_2.Controllers
 
                 laundryServiceLog.ServiceIds = new List<Guid> { serviceId }; // Store only the current service ID
                 laundryServiceLog.AddedById = user.Id;
+                laundryServiceLog.IsActive = true;
 
                 context.LaundryServiceLogs.Add(laundryServiceLog);
             }
@@ -267,7 +268,25 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
+        [HttpPut("UpdateServiceLogStatus/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult> UpdateServiceLogStatus([FromRoute] Guid id)
+        {
+            // Retrieve the service by its ID
+            var serviceLogs = await context.LaundryServiceLogs.FindAsync(id);
 
+            if (serviceLogs == null)
+            {
+                return NotFound("Service not found.");
+            }
+
+            serviceLogs.IsActive = !serviceLogs.IsActive;
+
+            context.LaundryServiceLogs.Update(serviceLogs);
+            await context.SaveChangesAsync();
+
+            return Ok(new { message = "Service active status updated successfully.", isActive = serviceLogs.IsActive });
+        }
 
 
 

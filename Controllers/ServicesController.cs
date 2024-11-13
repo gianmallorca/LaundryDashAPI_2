@@ -7,6 +7,7 @@ using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,6 +58,7 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<ActionResult> Post([FromBody] ServiceCreationDTO serviceCreationDTO)
         {
             var service = mapper.Map<Service>(serviceCreationDTO);
+            service.IsActive = true;
             context.Add(service);
             await context.SaveChangesAsync();
 
@@ -100,6 +102,27 @@ namespace LaundryDashAPI_2.Controllers
             var services = await context.Services.ToListAsync();
 
             return mapper.Map<List<ServiceDTO>>(services);
+        }
+        
+
+        [HttpPut("UpdateServiceStatus/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult> UpdateServiceStatus([FromRoute] Guid id)
+        {
+            // Retrieve the service by its ID
+            var service = await context.Services.FindAsync(id);
+
+            if (service == null)
+            {
+                return NotFound("Service not found.");
+            }
+
+            service.IsActive = !service.IsActive;
+
+            context.Services.Update(service);
+            await context.SaveChangesAsync();
+
+            return Ok(new { message = "Service active status updated successfully.", isActive = service.IsActive });
         }
     }
 }

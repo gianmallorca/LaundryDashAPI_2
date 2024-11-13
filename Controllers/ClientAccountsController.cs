@@ -64,27 +64,32 @@ namespace LaundryDashAPI_2.Controllers
 
      
        [HttpPost("create")]
-        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
+        public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials clientUserCredentials)
         {
+
+            if (clientUserCredentials.Password != clientUserCredentials.ConfirmPassword)
+            {
+                return BadRequest("Password and Confirm Password do not match.");
+            }
             // Create a new ApplicationUser with the provided credentials
             var user = new ApplicationUser
             {
-                FirstName = adminUserCredentials.FirstName,
-                LastName = adminUserCredentials.LastName,
-                UserName = adminUserCredentials.Email,
-                Email = adminUserCredentials.Email,
+                FirstName = clientUserCredentials.FirstName,
+                LastName = clientUserCredentials.LastName,
+                UserName = clientUserCredentials.Email,
+                Email = clientUserCredentials.Email,
                 UserType = "Client",
                 IsApproved = true, // Set default approval status to true
-                Birthday = adminUserCredentials.Birthday,
-                Age = adminUserCredentials.Age,
-                Gender = adminUserCredentials.Gender,
-                City = adminUserCredentials.City,
-                Barangay = adminUserCredentials.Barangay,
-                BrgyStreet = adminUserCredentials.BrgyStreet
+                Birthday = clientUserCredentials.Birthday,
+                Age = clientUserCredentials.Age,
+                Gender = clientUserCredentials.Gender,
+                City = clientUserCredentials.City,
+                Barangay = clientUserCredentials.Barangay,
+                BrgyStreet = clientUserCredentials.BrgyStreet
             };
 
             // Attempt to create the user
-            var result = await userManager.CreateAsync(user, adminUserCredentials.Password);
+            var result = await userManager.CreateAsync(user, clientUserCredentials.Password);
 
             if (result.Succeeded)
             {
@@ -97,7 +102,7 @@ namespace LaundryDashAPI_2.Controllers
                 }
 
                 // Generate and return a token for the created user
-                return await BuildToken(adminUserCredentials, user);
+                return await BuildToken(clientUserCredentials, user);
             }
             else
             {

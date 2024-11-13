@@ -31,6 +31,13 @@ namespace LaundryDashAPI_2.DTOs.LaundryShop
         public bool Saturday { get; set; }
         public bool Sunday { get; set; }
 
+        //permits
+        public string? BusinessPermitId { get; set; }
+        public string? DTIPermitId { get; set; }
+        public string? TaxIdentificationNumber { get; set; }
+        public string? EnvironmentalPermit { get; set; }
+        public string? SanitaryPermit { get; set; }
+
 
     }
 }

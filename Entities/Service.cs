@@ -8,6 +8,7 @@ namespace LaundryDashAPI_2.Entities
         [Required]
         [StringLength(50)]
         public string ServiceName { get; set; }
+        public bool IsActive { get; set; }
 
     }
 }

@@ -65,6 +65,10 @@ namespace LaundryDashAPI_2.Controllers
         [HttpPost("create")]
         public async Task<ActionResult> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
         {
+            if (laundryShopUserCredentials.Password != laundryShopUserCredentials.ConfirmPassword)
+            {
+                return BadRequest("Password and Confirm Password do not match.");
+            }
             // Create a new LaundryShopUser with the provided credentials
             var user = new ApplicationUser
             {
@@ -79,7 +83,9 @@ namespace LaundryDashAPI_2.Controllers
                 Gender = laundryShopUserCredentials.Gender,
                 City = laundryShopUserCredentials.City,
                 Barangay = laundryShopUserCredentials.Barangay,
-                BrgyStreet = laundryShopUserCredentials.BrgyStreet
+                BrgyStreet = laundryShopUserCredentials.BrgyStreet,
+                TaxIdentificationNumber = laundryShopUserCredentials.TaxIdentificationNumber,
+                BusinessPermitNumber = laundryShopUserCredentials.BusinessPermitNumber
             };
 
             // Attempt to create the user
