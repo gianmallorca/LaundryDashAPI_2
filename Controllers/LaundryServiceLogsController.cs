@@ -243,6 +243,25 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
+        [HttpPut("Edit-Description/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> EditDescription(Guid id, [FromBody] LaundryServiceLogCreationDTO laundryServiceLogCreationDTO)
+        {
+            var laundryServiceLog = await context.LaundryServiceLogs
+                .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
+
+            if (laundryServiceLog == null)
+            {
+                return NotFound("Laundry service log not found.");
+            }
+
+            laundryServiceLog.ServiceDescription = laundryServiceLogCreationDTO.ServiceDescription;
+
+            await context.SaveChangesAsync();
+
+            return NoContent(); 
+        }
+
 
 
         [HttpDelete("{id:Guid}")]
