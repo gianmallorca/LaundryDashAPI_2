@@ -51,7 +51,9 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<LaundryServiceLogDTO>> Get(Guid id)
         {
-            var laundryServiceLog = await context.LaundryServiceLogs.FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
+            var laundryServiceLog = await context.LaundryServiceLogs
+            .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id && x.IsActive);
+
 
             if (laundryServiceLog == null)
             {
