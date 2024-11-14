@@ -85,7 +85,7 @@ namespace LaundryDashAPI_2.Controllers
                 Barangay = laundryShopUserCredentials.Barangay,
                 BrgyStreet = laundryShopUserCredentials.BrgyStreet,
                 TaxIdentificationNumber = laundryShopUserCredentials.TaxIdentificationNumber,
-                BusinessPermitNumber = laundryShopUserCredentials.BusinessPermitNumber
+                BusinessPermitNumber = laundryShopUserCredentials.BusinessPermitNumber,
             };
 
             // Attempt to create the user
