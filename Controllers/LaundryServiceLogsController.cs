@@ -51,9 +51,7 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<LaundryServiceLogDTO>> Get(Guid id)
         {
-            var laundryServiceLog = await context.LaundryServiceLogs
-            .FirstOrDefaultAsync(x => x.LaundryServiceLogId == id && x.IsActive);
-
+            var laundryServiceLog = await context.LaundryServiceLogs.FirstOrDefaultAsync(x => x.LaundryServiceLogId == id);
 
             if (laundryServiceLog == null)
             {
@@ -73,9 +71,10 @@ namespace LaundryDashAPI_2.Controllers
             try
             {
                 var laundryServiceLogs = await context.LaundryServiceLogs
-                    .Where(x => x.LaundryShopId == id)
-                    .Include(x => x.LaundryShop)
-                    .ToListAsync();
+                  .Where(x => x.LaundryShopId == id && x.IsActive) // Add IsActive filter
+                  .Include(x => x.LaundryShop)
+                  .ToListAsync();
+
 
                 if (!laundryServiceLogs.Any())
                 {
