@@ -71,7 +71,7 @@ namespace LaundryDashAPI_2.Controllers
             try
             {
                 var laundryServiceLogs = await context.LaundryServiceLogs
-                  .Where(x => x.LaundryShopId == id && x.IsActive) // Add IsActive filter
+                  .Where(x => x.LaundryShopId == id) // Add IsActive filter
                   .Include(x => x.LaundryShop)
                   .ToListAsync();
 
