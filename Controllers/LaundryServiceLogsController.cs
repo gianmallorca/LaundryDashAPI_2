@@ -255,12 +255,14 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Laundry service log not found.");
             }
 
+            // Update the service description with the provided value
             laundryServiceLog.ServiceDescription = laundryServiceLogCreationDTO.ServiceDescription;
 
             await context.SaveChangesAsync();
 
-            return NoContent(); 
+            return NoContent();
         }
+
 
 
 
