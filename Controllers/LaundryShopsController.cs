@@ -273,6 +273,40 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<LaundryShopDTO>>(laundryShops);
         }
 
+        [HttpGet("getLaundryDetailsById/{id:Guid}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
+        public async Task<ActionResult<LaundryShopDTO>> GetLaundryDetailsById(Guid id)
+        {
+            // Retrieve the user's email from the claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Ensure the email claim exists
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch the laundry shop with the matching ID and ensure it is verified by the admin
+            var laundryShop = await context.LaundryShops
+                .FirstOrDefaultAsync(x => x.LaundryShopId == id && x.IsVerifiedByAdmin);
+
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry shop not found or not verified by the admin.");
+            }
+
+            // Map and return the laundry shop details as a DTO
+            return Ok(mapper.Map<LaundryShopDTO>(laundryShop));
+        }
+
 
 
     }
