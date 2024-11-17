@@ -69,6 +69,11 @@ namespace LaundryDashAPI_2
                    policy.RequireAssertion(context =>
                        context.User.HasClaim(c => c.Type == ClaimTypes.Role &&
                            (c.Value == "admin" || c.Value == "laundryShopAccount"))));
+
+                options.AddPolicy("IsAdminOrLaundryShopAccountOrClientAccount", policy =>
+                    policy.RequireAssertion(context =>
+                        context.User.HasClaim(c => c.Type == ClaimTypes.Role &&
+                            (c.Value == "admin" || c.Value == "laundryShopAccount" || c.Value == "clientAccount"))));
             });
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

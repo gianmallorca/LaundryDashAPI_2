@@ -97,7 +97,7 @@ namespace LaundryDashAPI_2.Controllers
 
         //to be tested, created 11/13/2024
         [HttpGet("getServiceIdsByLaundryShop/{laundryShopId}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
         public async Task<ActionResult<List<ServiceDTO>>> GetServiceIdsByLaundryShop(Guid laundryShopId)
         {
             // Retrieve the LaundryShop by its Id
@@ -294,7 +294,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         [HttpPut("UpdateServiceLogStatus/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> UpdateServiceLogStatus([FromRoute] Guid id)
         {
             // Retrieve the service by its ID
