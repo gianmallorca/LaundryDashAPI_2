@@ -64,7 +64,7 @@ namespace LaundryDashAPI_2.Controllers
 
         //new
         [HttpGet("manage-prices-by-LaundryId/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
         public async Task<ActionResult<List<LaundryServiceLogDTO>>> GetShopToManagePrices(Guid id)
         {
             // Retrieve all service logs associated with the given LaundryShopId
