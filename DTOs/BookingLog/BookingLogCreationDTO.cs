@@ -5,6 +5,7 @@
         public Guid BookingLogId { get; set; }
         public Guid LaundryServiceLogId { get; set; }
         public string LaundryShopName { get; set; }
+        public string ServiceName { get; set; }
         public DateTime BookingDate { get; set; }
         public decimal? TotalPrice { get; set; }
         public decimal? Weight { get; set; }
@@ -12,8 +13,10 @@
         public string DeliveryAddress { get; set; }
         public string? Note { get; set; }
 
-    
 
+        public string ClientName { get; set; }
+
+       
         // Booking status
         public bool IsAcceptedByShop { get; set; }
         public bool PickUpFromClient { get; set; }

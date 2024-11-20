@@ -113,8 +113,28 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //get pending bookings
-        [HttpGet("getPendingBookings")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        //[HttpGet("getPendingBookings")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        //public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
+        //{
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        //    // Check if the email is null or empty
+        //    if (string.IsNullOrEmpty(email))
+        //    {
+        //        return BadRequest("User email claim is missing.");
+        //    }
+
+        //    var pendingBookings = await context.BookingLogs
+        //        .Where(x => x.IsAcceptedByShop == false)
+        //        .OrderBy(x => x.BookingDate)      
+        //        .ToListAsync();                   
+
+        //    return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        //}
+
+        [HttpGet("get-pending-bookings")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -126,12 +146,34 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var pendingBookings = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
                 .Where(x => x.IsAcceptedByShop == false)
-                .OrderBy(x => x.BookingDate)      
-                .ToListAsync();                   
+                .OrderBy(x => x.BookingDate)
+                .Select(booking => new BookingLogDTO
+                {
+                    BookingLogId = booking.BookingLogId,
+                    LaundryShopName = booking.LaundryShopName,
+                    BookingDate = booking.BookingDate,
+                    PickupAddress = booking.PickupAddress,
+                    DeliveryAddress = booking.DeliveryAddress,
+                    Note = booking.Note,
+                    ClientName = context.Users
+                        .Where(user => user.Id == booking.ClientId)
+                        .Select(user => $"{user.FirstName} {user.LastName}")
+                        .FirstOrDefault(), // Return a single ClientName
+                    ServiceName = context.Services
+                        .Where(service => booking.LaundryServiceLog.ServiceIds.Contains(service.ServiceId)) // Match any ServiceId
+                        .Select(service => service.ServiceName) // Select the ServiceName
+                        .FirstOrDefault() // Fetch just one ServiceName (not a list)
+                })
+                .ToListAsync();
 
-            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+            return Ok(pendingBookings); // Directly return the result without remapping
         }
+
+
+
+
 
 
         //laundry shop accepts booking
