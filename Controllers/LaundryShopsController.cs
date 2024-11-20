@@ -196,7 +196,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-            context.Add(laundryShop);
+            context.LaundryShops.Add(laundryShop);
             await context.SaveChangesAsync();
 
             return NoContent();
