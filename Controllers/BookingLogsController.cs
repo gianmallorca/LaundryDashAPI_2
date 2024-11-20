@@ -96,7 +96,7 @@ namespace LaundryDashAPI_2.Controllers
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
                 Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
-                IsAccepted = false // Set default as false
+                
             };
 
 
@@ -109,8 +109,6 @@ namespace LaundryDashAPI_2.Controllers
             // Return a NoContent response (status code 204)
             return NoContent();
         }
-
-
 
 
 
@@ -128,12 +126,344 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var pendingBookings = await context.BookingLogs
-                .Where(x => x.IsAccepted == false) 
+                .Where(x => x.IsAcceptedByShop == false)
                 .OrderBy(x => x.BookingDate)      
                 .ToListAsync();                   
 
             return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
         }
+
+
+        //laundry shop accepts booking
+        [HttpPut("accept-booking/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> AcceptBooking(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.IsAcceptedByShop = true;
+
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        //notify rider for pickup
+        [HttpGet("notify-pickup-from-client")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromClient()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var pendingBookings = await context.BookingLogs
+                .Where(x => x.IsAcceptedByShop == true)
+                .OrderBy(x => x.BookingDate)
+                .ToListAsync();
+
+            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        }
+
+
+
+        //accept pickup by rider
+        [HttpPut("accept-pickup/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult> AcceptPickup(Guid id)
+        {
+            // Retrieve the email claim from the authenticated user
+            var email = User.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest("The email claim is missing or invalid.");
+            }
+
+            // Attempt to retrieve the user by their email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("The rider associated with this account does not exist.");
+            }
+
+            // Attempt to retrieve the booking log by its ID
+            var bookingLog = await context.BookingLogs.FirstOrDefaultAsync(x => x.BookingLogId == id);
+            if (bookingLog == null)
+            {
+                return NotFound("The specified booking log does not exist.");
+            }
+
+            // Update the booking log with the rider's information
+            bookingLog.PickUpFromClient = true;
+            bookingLog.PickupRiderId = user.Id;
+
+            // Save the changes to the database
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+        //start laundry
+        [HttpPut("has-started-laundry/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> HasStartedLaundry(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.HasStartedYourLaundry = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("is-ready-for-delivery/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> IsReadyForDelivery(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.IsReadyForDelivery = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("notify-pickup-from-shop")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromShop()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var pendingBookings = await context.BookingLogs
+                .Where(x => x.IsReadyForDelivery == true)
+                .ToListAsync();
+
+            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        }
+
+
+        [HttpPut("accept-delivery/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult> AcceptDelivery(Guid id)
+        {
+            // Retrieve the email claim from the authenticated user
+            var email = User.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest("The email claim is missing or invalid.");
+            }
+
+            // Attempt to retrieve the user by their email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("The rider associated with this account does not exist.");
+            }
+
+            // Attempt to retrieve the booking log by its ID
+            var bookingLog = await context.BookingLogs.FirstOrDefaultAsync(x => x.BookingLogId == id);
+            if (bookingLog == null)
+            {
+                return NotFound("The specified booking log does not exist.");
+            }
+
+            // Update the booking log with delivery information
+            bookingLog.PickUpFromShop = true;
+            bookingLog.DeliveryRiderId = user.Id;
+
+            // Save the changes to the database
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+        //sent out for delivery
+        [HttpPut("departed-from-shop/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> DepartedFromShop(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.DepartedFromShop = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("out-for-delivery/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult> IsOutForDelivery(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.IsOutForDelivery = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("received-by-client/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult> IsReceivedByClient(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.ReceivedByClient = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("transaction-completed/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult> TransactionCompleted(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var bookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(x => x.BookingLogId == id);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            bookingLog.TransactionCompleted = true;
+
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("notify-transaction-completed")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyTransactionCompleted()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var pendingBookings = await context.BookingLogs
+                .Where(x => x.TransactionCompleted == true)
+                .ToListAsync();
+
+            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        }
+
 
 
         [HttpDelete("{id:Guid}")]

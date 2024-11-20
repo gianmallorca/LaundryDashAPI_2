@@ -4,6 +4,7 @@ using LaundryDashAPI_2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LaundryDashAPI_2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241118102929_updatedBookingLogFields")]
+    partial class updatedBookingLogFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,9 +155,6 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<string>("DeliveryRiderId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("DepartedFromShop")
                         .HasColumnType("bit");
 
@@ -162,12 +162,6 @@ namespace LaundryDashAPI_2.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsAcceptedByShop")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsOutForDelivery")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsReadyForDelivery")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("LaundryServiceLogId")
@@ -180,10 +174,10 @@ namespace LaundryDashAPI_2.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("PickUpFromClient")
+                    b.Property<bool>("PickedUpFromClient")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("PickUpFromShop")
+                    b.Property<bool>("PickedUpFromShop")
                         .HasColumnType("bit");
 
                     b.Property<string>("PickupAddress")
@@ -191,11 +185,11 @@ namespace LaundryDashAPI_2.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<string>("PickupRiderId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("ReceivedByClient")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RiderId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("TotalPrice")
                         .HasColumnType("decimal(18,2)");

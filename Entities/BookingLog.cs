@@ -30,13 +30,19 @@ namespace LaundryDashAPI_2.Entities
 
         public string ClientId { get; set; }
 
-        public bool IsAccepted { get; set; }
+
+        public bool IsAcceptedByShop { get; set; }
+        public bool PickUpFromClient { get; set; }
+        public bool HasStartedYourLaundry { get; set; }
+        public bool IsReadyForDelivery { get; set; }
+        public bool PickUpFromShop { get; set; }
         public bool DepartedFromShop { get; set; }
-        public bool AcceptedByRider { get; set; }
+        public bool IsOutForDelivery { get; set; }
         public bool ReceivedByClient { get; set; }
         public bool TransactionCompleted { get; set; }
 
         
-        public string? RiderId { get; set; }
+        public string? PickupRiderId { get; set; }
+        public string? DeliveryRiderId { get; set; }
     }
 }
