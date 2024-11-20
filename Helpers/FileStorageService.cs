@@ -2,64 +2,69 @@
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace LaundryDashAPI_2.Helpers
 {
     public class FileStorageService : IFileStorageService
     {
+
         private readonly string basePath;
 
-        // Constructor to set the base path for file storage
-        public FileStorageService()
+        public FileStorageService(IConfiguration configuration)
         {
-            // Assuming files are stored in a folder named "Uploads" within the project directory
-            basePath = Path.Combine(Directory.GetCurrentDirectory(), "LaundryShopImages");
+            // Ensure the base path for local storage is initialized
+            basePath = configuration["LocalStorage:BasePath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "LaundryShopImages");
         }
 
-        // Delete the file from storage
+        // Method to delete a file, return type is Task (async operation with no result)
         public async Task DeleteFile(string fileRoute, string containerName)
         {
-            string filePath = Path.Combine(basePath, fileRoute);
+            if (string.IsNullOrEmpty(fileRoute))
+            {
+                return;
+            }
+
+            var filePath = Path.Combine(basePath, containerName, Path.GetFileName(fileRoute));
 
             if (File.Exists(filePath))
             {
-                File.Delete(filePath);
+                await Task.Run(() => File.Delete(filePath)); // Ensure delete runs asynchronously
             }
-
-            await Task.CompletedTask;
         }
 
-        // Save the file to storage
+        // Method to edit a file, return type is Task<string> (async operation with a string result)
+        public async Task<string> EditFile(string containerName, IFormFile file, string fileRoute)
+        {
+            // Delete the old file if it exists
+            await DeleteFile(fileRoute, containerName);
+
+            // Save the new file and return the file path
+            return await SaveFile(containerName, file);
+        }
+
+        // Method to save a file, return type is Task<string> (async operation with a string result)
         public async Task<string> SaveFile(string containerName, IFormFile file)
         {
             // Ensure the container directory exists
-            string containerPath = Path.Combine(basePath, containerName);
+            var containerPath = Path.Combine(basePath, containerName);
             Directory.CreateDirectory(containerPath);
 
             // Generate a unique file name
-            var fileName = Path.GetExtension(file.FileName);
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
 
             // Full file path
-            string filePath = Path.Combine(containerPath, fileName);
+            var filePath = Path.Combine(containerPath, fileName);
 
-            // Save the file to the server
+            // Save the file to the local storage
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // Return the relative path to store in the database (or a URL)
-            return Path.Combine(containerName, fileName);
-        }
-
-        // Edit the file in storage
-        public async Task<string> EditFile(string containerName, IFormFile file, string fileRoute)
-        {
-            // Delete the existing file before uploading the new one
-            await DeleteFile(fileRoute, containerName);
-
-            // Save the new file
-            return await SaveFile(containerName, file);
+            // Return the relative file path for storage in the database
+            return Path.Combine(containerName, fileName).Replace("\\", "/"); // Normalize path for URL usage
         }
     }
 }
+

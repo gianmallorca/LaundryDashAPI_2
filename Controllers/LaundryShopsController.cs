@@ -25,6 +25,7 @@ namespace LaundryDashAPI_2.Controllers
         private readonly IMapper mapper;
         private readonly IFileStorageService fileStorageService;
         private readonly UserManager<ApplicationUser> userManager;
+        private readonly string containerName = "LaundryShopImages";
 
         public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper,IFileStorageService fileStorageService, UserManager<ApplicationUser> userManager)
         {
@@ -144,7 +145,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> Post([FromForm] LaundryShopCreationDTO laundryShopCreationDTO, IFormFile? file)
+        public async Task<ActionResult> Post([FromForm] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             if (laundryShopCreationDTO == null)
             {
@@ -168,24 +169,32 @@ namespace LaundryDashAPI_2.Controllers
 
             laundryShop.AddedById = user.Id;
 
-            if (file != null)
+            //if (file != null)
+            //{
+            //    // Validate and save the file
+            //    if (file.Length > 5 * 1024 * 1024)
+            //    {
+            //        return BadRequest("File size exceeds the maximum allowed limit of 5 MB.");
+            //    }
+
+            //    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            //    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            //    if (!allowedExtensions.Contains(fileExtension))
+            //    {
+            //        return BadRequest("Invalid file format. Only JPG and PNG are allowed.");
+            //    }
+
+            //    var filePath = await fileStorageService.SaveFile("LaundryShopImages", file);
+            //    laundryShop.LaundryShopPicture = filePath;
+            //}
+
+            if (laundryShopCreationDTO.LaundryShopPicture != null)
             {
-                // Validate and save the file
-                if (file.Length > 5 * 1024 * 1024)
-                {
-                    return BadRequest("File size exceeds the maximum allowed limit of 5 MB.");
-                }
-
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                if (!allowedExtensions.Contains(fileExtension))
-                {
-                    return BadRequest("Invalid file format. Only JPG and PNG are allowed.");
-                }
-
-                var filePath = await fileStorageService.SaveFile("LaundryShopImages", file);
-                laundryShop.LaundryShopPicture = filePath;
+                laundryShop.LaundryShopPicture = await fileStorageService.SaveFile(containerName, laundryShopCreationDTO.LaundryShopPicture);
             }
+
+
+
 
             context.Add(laundryShop);
             await context.SaveChangesAsync();
