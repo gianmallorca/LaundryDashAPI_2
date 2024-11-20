@@ -4,6 +4,7 @@
     {
         public Guid LaundryShopId { get; set; }
         public string LaundryShopName { get; set; }
+        public string LaundryShopPicture { get; set; }
         public string City { get; set; }
         public string Barangay { get; set; }
         public string BrgyStreet { get; set; }
