@@ -151,47 +151,48 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("Request body cannot be null.");
             }
 
-            // Map the DTO to the entity
             var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
-
-            // Set IsVerifiedByAdmin to false by default
             laundryShop.IsVerifiedByAdmin = false;
 
-            // Retrieve the email from the current user's claims
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Find the user by email
             var user = await userManager.FindByEmailAsync(email);
-
-            // Check if the user was found
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            // Set the AddedById property
             laundryShop.AddedById = user.Id;
 
-            // If a file is provided, save the file and store the file path in the entity
             if (file != null)
             {
-                // Call the file storage service to save the file
+                // Validate and save the file
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    return BadRequest("File size exceeds the maximum allowed limit of 5 MB.");
+                }
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return BadRequest("Invalid file format. Only JPG and PNG are allowed.");
+                }
+
                 var filePath = await fileStorageService.SaveFile("LaundryShopImages", file);
-                laundryShop.LaundryShopPicture = filePath; // Assuming your LaundryShop entity has an ImagePath property
+                laundryShop.LaundryShopPicture = filePath;
             }
 
-            // Add the new laundry shop entity to the context and save it
             context.Add(laundryShop);
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
 
 

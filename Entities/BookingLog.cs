@@ -28,6 +28,7 @@ namespace LaundryDashAPI_2.Entities
         public string? Note { get; set; }
 
         public string ClientId { get; set; }
+        public ApplicationUser AppUser { get; set; }
 
 
         public bool IsAcceptedByShop { get; set; }

@@ -37,7 +37,7 @@ namespace LaundryDashAPI_2.Helpers
             Directory.CreateDirectory(containerPath);
 
             // Generate a unique file name
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            var fileName = Path.GetExtension(file.FileName);
 
             // Full file path
             string filePath = Path.Combine(containerPath, fileName);

@@ -9,7 +9,7 @@ namespace LaundryDashAPI_2.DTOs.LaundryShop
         [StringLength(120)]
         [FirstLetterUppercase]
         public string LaundryShopName { get; set; }
-        public string LaundryShopPicture { get; set; }
+        public IFormFile LaundryShopPicture { get; set; }
 
         [Required(ErrorMessage = "The field with name {0} is required")]
         public string City { get; set; }
