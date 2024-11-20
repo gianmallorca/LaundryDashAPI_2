@@ -96,8 +96,13 @@ namespace LaundryDashAPI_2.Controllers
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
                 Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
-                
+                ClientName = $"{user.FirstName} {user.LastName}", // Automatically set ClientName by combining FirstName and LastName
+                ServiceName = context.Services
+                             .Where(service => service.ServiceId == laundryServiceLog.ServiceIds.FirstOrDefault()) // Fetch the service based on the first ServiceId
+                             .Select(service => service.ServiceName)
+                             .FirstOrDefault() // Ensure we only get one service name
             };
+
 
 
             // Add the new booking log to the context
@@ -157,14 +162,9 @@ namespace LaundryDashAPI_2.Controllers
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Note = booking.Note,
-                    ClientName = context.Users
-                        .Where(user => user.Id == booking.ClientId)
-                        .Select(user => $"{user.FirstName} {user.LastName}")
-                        .FirstOrDefault(), // Return a single ClientName
-                    ServiceName = context.Services
-                        .Where(service => booking.LaundryServiceLog.ServiceIds.Contains(service.ServiceId)) // Match any ServiceId
-                        .Select(service => service.ServiceName) // Select the ServiceName
-                        .FirstOrDefault() // Fetch just one ServiceName (not a list)
+                    ClientName = booking.ClientName,
+                    ServiceName = booking.ServiceName
+                       
                 })
                 .ToListAsync();
 
