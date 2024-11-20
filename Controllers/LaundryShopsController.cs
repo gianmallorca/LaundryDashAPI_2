@@ -23,13 +23,15 @@ namespace LaundryDashAPI_2.Controllers
         private readonly ILogger<LaundryShopsController> logger;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IFileStorageService fileStorageService;
         private readonly UserManager<ApplicationUser> userManager;
 
-        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper, UserManager<ApplicationUser> userManager)
+        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper,IFileStorageService fileStorageService, UserManager<ApplicationUser> userManager)
         {
             this.logger = logger;
             this.context = context;
             this.mapper = mapper;
+            this.fileStorageService = fileStorageService;
             this.userManager = userManager;
         }
 
@@ -99,11 +101,50 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
+        //[HttpPost]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        //public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
+        //{
+        //    if (laundryShopCreationDTO == null)
+        //    {
+        //        return BadRequest("Request body cannot be null.");
+        //    }
 
+        //    // Map the DTO to the entity
+        //    var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
+
+        //    // Set IsApprovedByAdmin to false by default
+        //    laundryShop.IsVerifiedByAdmin = false;
+
+        //    // Retrieve the email from the current user's claims
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        //    // Check if the email is null or empty
+        //    if (string.IsNullOrEmpty(email))
+        //    {
+        //        return BadRequest("User email claim is missing.");
+        //    }
+
+        //    // Find the user by email
+        //    var user = await userManager.FindByEmailAsync(email);
+
+        //    // Check if the user was found
+        //    if (user == null)
+        //    {
+        //        return NotFound("User not found.");
+        //    }
+
+        //    // Set the AddedById property and save the entity
+        //    laundryShop.AddedById = user.Id;
+        //    context.Add(laundryShop);
+        //    await context.SaveChangesAsync();
+
+        //    return NoContent();
+        //}
 
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
+        public async Task<ActionResult> Post([FromForm] LaundryShopCreationDTO laundryShopCreationDTO, IFormFile? file)
         {
             if (laundryShopCreationDTO == null)
             {
@@ -113,7 +154,7 @@ namespace LaundryDashAPI_2.Controllers
             // Map the DTO to the entity
             var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
 
-            // Set IsApprovedByAdmin to false by default
+            // Set IsVerifiedByAdmin to false by default
             laundryShop.IsVerifiedByAdmin = false;
 
             // Retrieve the email from the current user's claims
@@ -134,13 +175,24 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Set the AddedById property and save the entity
+            // Set the AddedById property
             laundryShop.AddedById = user.Id;
+
+            // If a file is provided, save the file and store the file path in the entity
+            if (file != null)
+            {
+                // Call the file storage service to save the file
+                var filePath = await fileStorageService.SaveFile("LaundryShopImages", file);
+                laundryShop.LaundryShopPicture = filePath; // Assuming your LaundryShop entity has an ImagePath property
+            }
+
+            // Add the new laundry shop entity to the context and save it
             context.Add(laundryShop);
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
 
         [HttpGet("getPendingLaundryShops")]
