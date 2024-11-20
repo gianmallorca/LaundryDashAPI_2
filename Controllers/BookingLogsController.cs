@@ -178,7 +178,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
-                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    LaundryShopName = laundryServiceLog.LaundryShop.LaundryShopName,
                     BookingDate = booking.BookingDate,
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
