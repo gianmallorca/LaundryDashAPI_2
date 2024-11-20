@@ -126,7 +126,7 @@ namespace LaundryDashAPI_2
             });
 
             builder.Services.AddAutoMapper(typeof(Program));
-            
+            builder.Services.AddScoped<IFileStorageService, FileStorageService>();
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
