@@ -76,31 +76,23 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Retrieve the LaundryServiceLog associated with the given LaundryServiceLogId
-            var laundryServiceLog = await context.LaundryServiceLogs
-                .Include(log => log.LaundryShop) // Ensure related LaundryShop is included
-                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogCreationDTO.LaundryServiceLogId);
+           
 
-            if (laundryServiceLog == null || laundryServiceLog.LaundryShop == null)
-            {
-                return NotFound("Laundry service log or related laundry shop not found.");
-            }
+           
+
+            
 
             // Map the incoming DTO to the BookingLog entity
             var bookingLog = new BookingLog
             {
                 BookingLogId = Guid.NewGuid(), // Generate new BookingLogId
                 LaundryServiceLogId = bookingLogCreationDTO.LaundryServiceLogId, // Set the associated LaundryServiceLogId
-                LaundryShopName = laundryServiceLog.LaundryShop.LaundryShopName, // Extract LaundryShopName from related LaundryShop
                 BookingDate = DateTime.UtcNow, // Automatically set the BookingDate to the current UTC time
                 PickupAddress = bookingLogCreationDTO.PickupAddress,
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
                 Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
-                ClientName = $"{user.FirstName} {user.LastName}", // Automatically set ClientName by combining FirstName and LastName
-                ServiceName = context.Services
-                             .Where(service => service.ServiceId == laundryServiceLog.ServiceIds.FirstOrDefault()) // Fetch the service based on the first ServiceId
-                             .Select(service => service.ServiceName)
-                             .FirstOrDefault() // Ensure we only get one service name
+             
             };
 
 
@@ -140,7 +132,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("get-pending-bookings")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
+        public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings(BookingLogDTO bookingLogDTO)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -150,6 +142,35 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+
+            // Check if the user was found
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var laundryServiceLog = await context.LaundryServiceLogs
+               .Include(log => log.LaundryShop) // Ensure related LaundryShop is included
+               .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogDTO.LaundryServiceLogId);
+
+            if (laundryServiceLog == null || laundryServiceLog.LaundryShop == null)
+            {
+                return NotFound("Laundry service log or related laundry shop not found.");
+            }
+
+            var serviceName = context.Services
+                             .Where(service => service.ServiceId == laundryServiceLog.ServiceIds.FirstOrDefault()) // Fetch the service based on the first ServiceId
+                             .Select(service => service.ServiceName)
+                             .FirstOrDefault();
+
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                 .Where(x => x.IsAcceptedByShop == false)
@@ -157,16 +178,17 @@ namespace LaundryDashAPI_2.Controllers
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
-                    LaundryShopName = booking.LaundryShopName,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
                     BookingDate = booking.BookingDate,
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Note = booking.Note,
-                    ClientName = booking.ClientName,
-                    ServiceName = booking.ServiceName
-                       
+                    ClientName = $"{user.FirstName} {user.LastName}",
+                    ServiceName = serviceName
+
                 })
                 .ToListAsync();
+            
 
             return Ok(pendingBookings); // Directly return the result without remapping
         }
@@ -293,6 +315,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return NoContent();
         }
+
 
         [HttpPut("is-ready-for-delivery/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]

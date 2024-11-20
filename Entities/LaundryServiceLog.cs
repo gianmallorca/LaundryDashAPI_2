@@ -11,6 +11,7 @@
         //Service
         
         public List<Guid> ServiceIds { get; set; } = new List<Guid>();
+        public Service Service { get; set; }
         public string? ServiceDescription { get; set; }
         public decimal ?Price { get; set; }
 
