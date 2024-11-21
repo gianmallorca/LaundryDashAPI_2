@@ -17,7 +17,7 @@ namespace LaundryDashAPI_2.Controllers
 
     [Route("api/laundryShops")]
     [ApiController]
- 
+
     public class LaundryShopsController : Controller
     {
         private readonly ILogger<LaundryShopsController> logger;
@@ -27,7 +27,7 @@ namespace LaundryDashAPI_2.Controllers
         private readonly UserManager<ApplicationUser> userManager;
         private readonly string containerName = "LaundryShopImages";
 
-        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper,IFileStorageService fileStorageService, UserManager<ApplicationUser> userManager)
+        public LaundryShopsController(ILogger<LaundryShopsController> logger, ApplicationDbContext context, IMapper mapper, IFileStorageService fileStorageService, UserManager<ApplicationUser> userManager)
         {
             this.logger = logger;
             this.context = context;
@@ -257,8 +257,8 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        [HttpPut("{id:Guid}", Name ="editLaundryShop")]
-       
+        [HttpPut("{id:Guid}", Name = "editLaundryShop")]
+
         public async Task<ActionResult> Put(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
@@ -267,14 +267,14 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound();
             }
 
-            laundryShop =  mapper.Map(laundryShopCreationDTO, laundryShop);
+            laundryShop = mapper.Map(laundryShopCreationDTO, laundryShop);
             await context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        [HttpDelete("{id:Guid}", Name ="deleteLaundryShop")]
-        
+        [HttpDelete("{id:Guid}", Name = "deleteLaundryShop")]
+
         public async Task<ActionResult> Delete(Guid id)
         {
             var exists = await context.LaundryShops.AnyAsync(x => x.LaundryShopId == id);
@@ -291,7 +291,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("PostGet")]
         [AllowAnonymous]
-        
+
         public async Task<ActionResult<List<LaundryShopDTO>>> GetLaundryPostGet()
         {
             var laundryShops = await context.LaundryShops.ToListAsync();
