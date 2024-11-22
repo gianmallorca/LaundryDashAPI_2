@@ -147,7 +147,7 @@ namespace LaundryDashAPI_2.Controllers
 
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
-                .Where(x => x.IsAcceptedByShop == false)
+                .Where(x => x.IsAcceptedByShop == false && x.LaundryServiceLog.AddedById == user.Id)
                 .OrderBy(x => x.BookingDate)
                 .Select(booking => new BookingLogDTO
                 {

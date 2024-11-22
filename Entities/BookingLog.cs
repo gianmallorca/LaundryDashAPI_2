@@ -10,7 +10,7 @@ namespace LaundryDashAPI_2.Entities
         public Guid BookingLogId { get; set; }
 
         public Guid LaundryServiceLogId { get; set; }
-        public LaundryServiceLog LaundryServiceLog { get; set; }
+        public LaundryServiceLog? LaundryServiceLog { get; set; }
         public DateTime BookingDate { get; set; }
         public decimal? TotalPrice { get; set; }
         public decimal? Weight { get; set; }
@@ -28,7 +28,7 @@ namespace LaundryDashAPI_2.Entities
         public string? Note { get; set; }
 
         public string ClientId { get; set; }
-        public ApplicationUser AppUser { get; set; }
+        public ApplicationUser? AppUser { get; set; }
 
 
         public bool IsAcceptedByShop { get; set; }
