@@ -101,74 +101,118 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+        //[HttpGet("getPendingBookings")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        //public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
+        //{
+        //    // Step 1: Get the logged-in user's email
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-       
+        //    if (string.IsNullOrEmpty(email))
+        //    {
+        //        return BadRequest("User email claim is missing.");
+        //    }
 
-        [HttpGet("get-pending-bookings")]
+        //    // Step 2: Fetch the logged-in user
+        //    var user = await userManager.FindByEmailAsync(email);
+        //    if (user == null)
+        //    {
+        //        return NotFound("User not found.");
+        //    }
+
+        //    // Step 3: Query pending bookings with EF, including related data
+        //    var pendingBookings = await context.BookingLogs
+        //        .Include(booking => booking.LaundryServiceLog)
+        //        .ThenInclude(log => log.LaundryShop) // Include LaundryShop for shop details
+        //        .Where(booking =>
+        //            booking.IsAcceptedByShop == false && // Filter pending bookings
+        //            booking.LaundryServiceLog.AddedById == user.Id) // Match AddedById with logged-in user
+        //        .Select(booking => new BookingLogDTO
+        //        {
+        //            BookingLogId = booking.BookingLogId,
+        //            LaundryServiceLogId = booking.LaundryServiceLogId,
+        //            LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+        //            ServiceName = context.Services
+        //                .Where(service =>
+        //                    booking.LaundryServiceLog.ServiceIds != null &&
+        //                    service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+        //                .Select(service => service.ServiceName)
+        //                .FirstOrDefault(), // Resolve service name
+        //            BookingDate = booking.BookingDate,
+        //            TotalPrice = booking.TotalPrice,
+        //            Weight = booking.Weight,
+        //            PickupAddress = booking.PickupAddress,
+        //            DeliveryAddress = booking.DeliveryAddress,
+        //            Note = booking.Note,
+        //            ClientName = context.Users
+        //                .Where(client => client.Id == booking.ClientId)
+        //                .Select(client => $"{client.FirstName} {client.LastName}")
+        //                .FirstOrDefault() ?? "Unknown Client" // Resolve client name
+        //        })
+        //        .OrderBy(booking => booking.BookingDate)
+        //        .ToListAsync();
+
+        //    return Ok(pendingBookings);
+        //}
+
+
+
+        [HttpGet("getPendingBookings")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings(BookingLogDTO bookingLogDTO)
+        public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
         {
+
+
+            // Step 1: Get the logged-in user's email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Find the user by email
+            // Step 2: Fetch the logged-in user
             var user = await userManager.FindByEmailAsync(email);
-
-            // Check if the user was found
             if (user == null)
             {
                 return NotFound("User not found.");
             }
-
-            // Check if the email is null or empty
-            if (string.IsNullOrEmpty(email))
-            {
-                return BadRequest("User email claim is missing.");
-            }
-
-            var laundryServiceLog = await context.LaundryServiceLogs
-               .Include(log => log.LaundryShop) // Ensure related LaundryShop is included
-               .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogDTO.LaundryServiceLogId);
-
-            if (laundryServiceLog == null || laundryServiceLog.LaundryShop == null)
-            {
-                return NotFound("Laundry service log or related laundry shop not found.");
-            }
-
-            var serviceName = context.Services
-                             .Where(service => service.ServiceId == laundryServiceLog.ServiceIds.FirstOrDefault()) // Fetch the service based on the first ServiceId
-                             .Select(service => service.ServiceName)
-                             .FirstOrDefault();
-
+            // Query all pending bookings
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
-                .Where(x => x.IsAcceptedByShop == false && x.LaundryServiceLog.AddedById == user.Id)
-                .OrderBy(x => x.BookingDate)
+                .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
+                .Where(booking => booking.IsAcceptedByShop == false) // Only pending bookings
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
-                    LaundryShopName = laundryServiceLog.LaundryShop.LaundryShopName,
+                    LaundryServiceLogId = booking.LaundryServiceLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
                     BookingDate = booking.BookingDate,
+                    TotalPrice = booking.TotalPrice,
+                    Weight = booking.Weight,
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Note = booking.Note,
-                    ClientName = $"{user.FirstName} {user.LastName}",
-                    ServiceName = serviceName
-
+                    ClientName = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
                 })
+                .OrderBy(booking => booking.BookingDate)
                 .ToListAsync();
 
-
-            return Ok(pendingBookings); // Directly return the result without remapping
+            return Ok(pendingBookings);
         }
 
 
-        
+
+
         [HttpGet("get-pending-booking-by-Id")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookingById(Guid id, BookingLogDTO bookingLogDTO)
