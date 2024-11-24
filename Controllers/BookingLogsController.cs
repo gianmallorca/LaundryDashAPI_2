@@ -161,8 +161,6 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
         {
-
-
             // Step 1: Get the logged-in user's email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -177,11 +175,14 @@ namespace LaundryDashAPI_2.Controllers
             {
                 return NotFound("User not found.");
             }
-            // Query all pending bookings
+
+            // Query pending bookings where IsAcceptedByShop is false and AddedById matches the current user
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
-                .Where(booking => booking.IsAcceptedByShop == false) // Only pending bookings
+                .Where(booking =>
+                    booking.IsAcceptedByShop == false && // Pending bookings
+                    booking.LaundryServiceLog.AddedById == user.Id) // Match AddedById with logged-in user
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
