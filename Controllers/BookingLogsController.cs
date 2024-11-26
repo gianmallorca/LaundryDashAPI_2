@@ -249,7 +249,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("NotifyPickupFromClient")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
-        public async Task<ActionResult<List<object>>> NotifyPickupFromClient()
+        public async Task<ActionResult<object>> NotifyPickupFromClient()
         {
             // Step 1: Get the logged-in user's email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -266,8 +266,8 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Step 3: Query for pending bookings
-            var pendingBookings = await context.BookingLogs
+            // Step 3: Query for the first pending booking
+            var pendingBooking = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                     .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
                 .Where(booking =>
@@ -294,10 +294,17 @@ namespace LaundryDashAPI_2.Controllers
                         .Select(client => $"{client.FirstName} {client.LastName}")
                         .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
-            return Ok(pendingBookings);
+            // Step 4: Return the result
+            if (pendingBooking == null)
+            {
+                return NotFound("No pending bookings found.");
+            }
+
+            return Ok(pendingBooking);
         }
+
 
 
 
