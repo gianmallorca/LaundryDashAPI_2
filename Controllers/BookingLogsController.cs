@@ -249,60 +249,54 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("NotifyPickupFromClient")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
-        public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromClient([FromQuery] BookingLogDTO bookingLogDTO)
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromClient()
         {
+            // Step 1: Get the logged-in user's email
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Fetch the LaundryServiceLog by its ID
-            var laundryServiceLog = await context.LaundryServiceLogs
-                .Include(log => log.LaundryShop) // Ensure related LaundryShop is included
-                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogDTO.LaundryServiceLogId);
-
-            if (laundryServiceLog == null || laundryServiceLog.LaundryShop == null)
+            // Step 2: Fetch the logged-in user
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
             {
-                return NotFound("Laundry service log or related laundry shop not found.");
+                return NotFound("User not found.");
             }
 
-            // Fetch the pending bookings based on the LaundryServiceLog and join with the client details
+            // Query pending bookings where IsAcceptedByShop is false and AddedById matches the current user
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop) // Include related LaundryShop details
-                .Join(context.Users, // Join with ApplicationUser
-                    booking => booking.ClientId, // Foreign Key in BookingLog
-                    user => user.Id, // Primary Key in ApplicationUser
-                    (booking, user) => new { booking, user }) // Combine both tables
-                .Where(x => x.booking.LaundryServiceLogId == bookingLogDTO.LaundryServiceLogId && // Match the LaundryServiceLogId
-                            x.booking.IsAcceptedByShop == true) // Only accepted bookings
-                .OrderBy(x => x.booking.BookingDate) // Order by the booking date
-             .Select(x => new BookingLogDTO
-                 {
-                     BookingLogId = x.booking.BookingLogId,
-                     LaundryShopName = x.booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                     ServiceName = context.Services
+                .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
+                .Where(booking =>
+                    booking.IsAcceptedByShop == true && // Pending bookings
+                    booking.LaundryServiceLog.AddedById == user.Id && booking.TransactionCompleted == false) // Match AddedById with logged-in user
+                .Select(booking => new BookingLogDTO
+                {
+                    BookingLogId = booking.BookingLogId,
+                    LaundryServiceLogId = booking.LaundryServiceLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
                         .Where(service =>
-                            x.booking.LaundryServiceLog.ServiceIds != null && // Corrected reference to x.booking
-                            service.ServiceId == x.booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
-                     BookingDate = x.booking.BookingDate,
-                     PickupAddress = x.booking.PickupAddress,
-                     DeliveryAddress = x.booking.DeliveryAddress,
-                     Note = x.booking.Note,
-                     ClientName = $"{x.user.FirstName} {x.user.LastName}" // Full name of the client
-                 })
-
+                    BookingDate = booking.BookingDate,
+                    TotalPrice = booking.TotalPrice,
+                    Weight = booking.Weight,
+                    PickupAddress = booking.PickupAddress,
+                    DeliveryAddress = booking.DeliveryAddress,
+                    Note = booking.Note,
+                    ClientName = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                })
+                .OrderBy(booking => booking.BookingDate)
                 .ToListAsync();
-
-            if (pendingBookings == null || !pendingBookings.Any())
-            {
-                return NotFound("No pending bookings found.");
-            }
 
             return Ok(pendingBookings);
         }
