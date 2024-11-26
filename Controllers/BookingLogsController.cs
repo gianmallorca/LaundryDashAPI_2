@@ -272,7 +272,7 @@ namespace LaundryDashAPI_2.Controllers
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
                 .Where(booking =>
                     booking.IsAcceptedByShop == true && // Pending bookings
-                    booking.LaundryServiceLog.AddedById == user.Id && booking.TransactionCompleted == false) // Match AddedById with logged-in user
+                    booking.TransactionCompleted == false) // Match AddedById with logged-in user
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
