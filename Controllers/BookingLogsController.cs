@@ -271,7 +271,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Include(booking => booking.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
                 .Where(booking =>
-                    booking.IsAcceptedByShop == true && // Pending bookings
+                    booking.IsAcceptedByShop == true && booking.PickUpFromClient == false &&// Pending bookings
                     booking.TransactionCompleted == false) // Match AddedById with logged-in user
                 .Select(booking => new BookingLogDTO
                 {
@@ -324,7 +324,7 @@ namespace LaundryDashAPI_2.Controllers
             var booking = await context.BookingLogs
                 .Include(b => b.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop details
-                .Where(b => b.BookingLogId == id && b.IsAcceptedByShop == true && !b.TransactionCompleted)
+                .Where(b => b.BookingLogId == id && b.IsAcceptedByShop == true && b.PickUpFromClient == false &&!b.TransactionCompleted)
                 .Select(b => new BookingLogDTO
                 {
                     BookingLogId = b.BookingLogId,
