@@ -301,6 +301,64 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(pendingBookings);
         }
 
+        [HttpGet("GetPickupNotificationById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult<BookingLogDTO>> GetPickupNotifById(Guid id)
+        {
+            // Step 1: Get the logged-in user's email
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Step 2: Fetch the logged-in user
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Step 3: Fetch the specific booking by ID
+            var booking = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog)
+                .ThenInclude(log => log.LaundryShop) // Include LaundryShop details
+                .Where(b => b.BookingLogId == id && b.IsAcceptedByShop == true && !b.TransactionCompleted)
+                .Select(b => new BookingLogDTO
+                {
+                    BookingLogId = b.BookingLogId,
+                    LaundryServiceLogId = b.LaundryServiceLogId,
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
+                        .Where(service => b.LaundryServiceLog.ServiceIds != null &&
+                                          service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    BookingDate = b.BookingDate,
+                    TotalPrice = b.TotalPrice,
+                    Weight = b.Weight,
+                    PickupAddress = b.PickupAddress,
+                    DeliveryAddress = b.DeliveryAddress,
+                    Note = b.Note,
+                    ClientName = context.Users
+                        .Where(client => client.Id == b.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                })
+                .FirstOrDefaultAsync();
+
+            // Step 4: Check if booking exists
+            if (booking == null)
+            {
+                return NotFound("Booking not found or not eligible for pickup notification.");
+            }
+
+            // Step 5: Return the booking details
+            return Ok(booking);
+        }
+
+
 
 
 
