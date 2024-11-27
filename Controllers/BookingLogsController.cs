@@ -404,9 +404,9 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         //notification for client, example: Kian Javellana is on his way to pick up your laundry for Regular Wash Service at Tidy Bubbles!
-        [HttpGet("notify-client-for-pickup")]
+        [HttpGet("notifyClientForPickup")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult<List<object>>> NotifyClientForPickup(BookingLogDTO bookingLogDTO)
+        public async Task<ActionResult<List<object>>> NotifyClientForPickup()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -416,7 +416,6 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
-            // Fetch the client user details directly
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
@@ -448,6 +447,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return Ok(pendingBookings);
         }
+
 
 
         //start laundry
