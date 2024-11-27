@@ -7,6 +7,7 @@ namespace LaundryDashAPI_2.DTOs.BookingLog
         public Guid BookingLogId { get; set; } // Unique identifier for the booking log
         public Guid LaundryServiceLogId { get; set; } // ID of the associated laundry service log
         public string LaundryShopName { get; set; } // Name of the laundry shop
+        public string LaundryShopAddress { get; set; }
         public string ServiceName { get; set; } // Name of the selected service
         public DateTime BookingDate { get; set; } // Date and time the booking was created
         public decimal? TotalPrice { get; set; } // Total price of the booking
