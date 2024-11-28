@@ -36,35 +36,93 @@ namespace LaundryDashAPI_2.Controllers
             this.userManager = userManager;
         }
 
+        //[HttpGet("getLaundryShop")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
+        //public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
+        //{
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        //    // Check if the email is null or empty
+        //    if (string.IsNullOrEmpty(email))
+        //    {
+        //        return BadRequest("User email claim is missing.");
+        //    }
+
+
+        //    var queryable = context.LaundryShops.AsQueryable();
+        //    queryable = queryable.Where(x => x.IsVerifiedByAdmin == true);
+        //    await HttpContext.InsertParametersPaginationInHeader(queryable);
+
+        //    var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
+
+        //    return mapper.Map<List<LaundryShopDTO>>(laundryShops);
+
+
+        //}
+
         [HttpGet("getLaundryShop")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-
+            // Query verified laundry shops
             var queryable = context.LaundryShops.AsQueryable();
             queryable = queryable.Where(x => x.IsVerifiedByAdmin == true);
             await HttpContext.InsertParametersPaginationInHeader(queryable);
 
-            var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
+            // Fetch and map laundry shops
+            var laundryShops = await queryable
+                .OrderBy(x => x.LaundryShopName)
+                .Paginate(paginationDTO)
+                .Select(x => new LaundryShopDTO
+                {
+                    LaundryShopId = x.LaundryShopId,
+                    LaundryShopName = x.LaundryShopName,
+                    LaundryShopPicture = x.LaundryShopPicture
+                })
+                .ToListAsync();
 
-            return mapper.Map<List<LaundryShopDTO>>(laundryShops);
-
-
+            return Ok(laundryShops);
         }
 
 
+        //gets laundry shop picture
+        [HttpGet("images/{id}")]
+        public async Task<IActionResult> GetImage(string id)
+        {
+            // Retrieve the LaundryShop record
+            var shop = await context.LaundryShops
+                .Where(x => x.LaundryShopPicture == id)
+                .FirstOrDefaultAsync();
 
-        //  [HttpGet("getLaundryShopByUserAccountId")]
-        // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsLaundryShopAccount")]
+            if (shop == null)
+            {
+                return NotFound("Laundry shop or picture not found.");
+            }
+
+            // Construct the file path
+            var imagePath = Path.Combine("LaundryShopImages", shop.LaundryShopPicture);
+            if (!System.IO.File.Exists(imagePath))
+            {
+                return NotFound("Image not found.");
+            }
+
+            var image = System.IO.File.OpenRead(imagePath);
+            return File(image, "image/jpeg"); // Adjust content type as needed
+        }
+
+/// <summary>
+/// ////////////////////////////////////////////////////
+/// </summary>
+/// <returns></returns>
+
+
         [HttpGet("getLaundryShopByUserId")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<LaundryShopDTO>>> GetByUserAccountId()
@@ -102,46 +160,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        //[HttpPost]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        //public async Task<ActionResult> Post([FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
-        //{
-        //    if (laundryShopCreationDTO == null)
-        //    {
-        //        return BadRequest("Request body cannot be null.");
-        //    }
-
-        //    // Map the DTO to the entity
-        //    var laundryShop = mapper.Map<Entities.LaundryShop>(laundryShopCreationDTO);
-
-        //    // Set IsApprovedByAdmin to false by default
-        //    laundryShop.IsVerifiedByAdmin = false;
-
-        //    // Retrieve the email from the current user's claims
-        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-        //    // Check if the email is null or empty
-        //    if (string.IsNullOrEmpty(email))
-        //    {
-        //        return BadRequest("User email claim is missing.");
-        //    }
-
-        //    // Find the user by email
-        //    var user = await userManager.FindByEmailAsync(email);
-
-        //    // Check if the user was found
-        //    if (user == null)
-        //    {
-        //        return NotFound("User not found.");
-        //    }
-
-        //    // Set the AddedById property and save the entity
-        //    laundryShop.AddedById = user.Id;
-        //    context.Add(laundryShop);
-        //    await context.SaveChangesAsync();
-
-        //    return NoContent();
-        //}
+        
 
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
@@ -169,31 +188,11 @@ namespace LaundryDashAPI_2.Controllers
 
             laundryShop.AddedById = user.Id;
 
-            //if (file != null)
-            //{
-            //    // Validate and save the file
-            //    if (file.Length > 5 * 1024 * 1024)
-            //    {
-            //        return BadRequest("File size exceeds the maximum allowed limit of 5 MB.");
-            //    }
-
-            //    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-            //    var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            //    if (!allowedExtensions.Contains(fileExtension))
-            //    {
-            //        return BadRequest("Invalid file format. Only JPG and PNG are allowed.");
-            //    }
-
-            //    var filePath = await fileStorageService.SaveFile("LaundryShopImages", file);
-            //    laundryShop.LaundryShopPicture = filePath;
-            //}
-
+          
             if (laundryShopCreationDTO.LaundryShopPicture != null)
             {
                 laundryShop.LaundryShopPicture = await fileStorageService.SaveFile(containerName, laundryShopCreationDTO.LaundryShopPicture);
             }
-
-
 
 
             context.LaundryShops.Add(laundryShop);

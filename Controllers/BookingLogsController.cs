@@ -448,6 +448,62 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(pendingBookings);
         }
 
+        //see full notif details
+        [HttpGet("getClientPickupNotificationById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult<object>> GetClientPickupNotificationById(Guid id)
+        {
+            // Validate user email claim
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Check if the user exists
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch the specific booking log by BookingLogId
+            var booking = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop) // Include related LaundryShop
+                .Where(b => b.BookingLogId == id && b.ClientId == user.Id) // Filter by BookingLogId and logged-in ClientId
+                .Select(b => new
+                {
+                    BookingLogId = id,
+                    RiderName = context.Users
+                        .Where(rider => rider.Id == b.PickupRiderId)
+                        .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                        .FirstOrDefault() ?? "Unassigned", // Handle case where RiderId is null
+                    ServiceName = context.Services
+                        .Where(service =>
+                            b.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop != null
+                        ? b.LaundryServiceLog.LaundryShop.LaundryShopName
+                        : "Unknown Shop", // Handle missing LaundryShop
+                    PickupAddress = b.PickupAddress,
+                    DeliveryAddress = b.DeliveryAddress,
+                    BookingDate = b.BookingDate,
+                    
+                })
+                .FirstOrDefaultAsync();
+
+            // If no booking log is found
+            if (booking == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            return Ok(booking);
+        }
+
 
 
         //start laundry
