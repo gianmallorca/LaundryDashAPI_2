@@ -410,7 +410,6 @@ namespace LaundryDashAPI_2.Controllers
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
@@ -424,29 +423,31 @@ namespace LaundryDashAPI_2.Controllers
 
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop) // Ensure LaundryShop is included
+                    .ThenInclude(log => log.LaundryShop)
                 .Where(booking => booking.PickUpFromClient == true && booking.TransactionCompleted == false)
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {
+                    BookingLogId = booking.BookingLogId, // Include the BookingLogId
                     RiderName = context.Users
                         .Where(rider => rider.Id == booking.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
-                        .FirstOrDefault() ?? "Unassigned", // Handle case where RiderId is null
+                        .FirstOrDefault() ?? "Unassigned",
                     ServiceName = context.Services
                         .Where(service =>
                             booking.LaundryServiceLog.ServiceIds != null &&
                             service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
                         .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                        .FirstOrDefault() ?? "Unknown Service",
                     LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
                         ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
-                        : "Unknown Shop" // Handle missing LaundryShop
+                        : "Unknown Shop"
                 })
                 .ToListAsync();
 
             return Ok(pendingBookings);
         }
+
 
         //see full notif details
         [HttpGet("getClientPickupNotificationById/{id}")]
