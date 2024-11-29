@@ -61,34 +61,28 @@ namespace LaundryDashAPI_2.Controllers
         //}
 
         [HttpGet("getLaundryShop")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
         public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
+            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Query verified laundry shops
+
             var queryable = context.LaundryShops.AsQueryable();
             queryable = queryable.Where(x => x.IsVerifiedByAdmin == true);
             await HttpContext.InsertParametersPaginationInHeader(queryable);
 
-            // Fetch and map laundry shops
-            var laundryShops = await queryable
-                .OrderBy(x => x.LaundryShopName)
-                .Paginate(paginationDTO)
-                .Select(x => new LaundryShopDTO
-                {
-                    LaundryShopId = x.LaundryShopId,
-                    LaundryShopName = x.LaundryShopName,
-                    LaundryShopPicture = x.LaundryShopPicture
-                })
-                .ToListAsync();
+            var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
 
-            return Ok(laundryShops);
+            return mapper.Map<List<LaundryShopDTO>>(laundryShops);
+
+
         }
 
 
