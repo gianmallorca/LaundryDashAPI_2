@@ -456,52 +456,43 @@ namespace LaundryDashAPI_2.Controllers
         {
             // Validate user email claim
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Check if the user exists
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            // Fetch the specific booking log by BookingLogId
-            var booking = await context.BookingLogs
-                .Include(b => b.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop) // Include related LaundryShop
-                .Where(b => b.BookingLogId == id && b.ClientId == user.Id) // Filter by BookingLogId and logged-in ClientId
-                .Select(b => new
+            var bookingNotif = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(booking => booking.PickUpFromClient == true && booking.BookingLogId == id && booking.TransactionCompleted == false)
+                .OrderBy(booking => booking.BookingDate)
+                .Select(booking => new
                 {
-                    BookingLogId = id,
+                    BookingLogId = id, // Include the BookingLogId
                     RiderName = context.Users
-                        .Where(rider => rider.Id == b.PickupRiderId)
+                        .Where(rider => rider.Id == booking.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
-                        .FirstOrDefault() ?? "Unassigned", // Handle case where RiderId is null
-                    ServiceName = b.LaundryServiceLog.ServiceIds != null && b.LaundryServiceLog.ServiceIds.Any()
-                        ? context.Services
-                            .Where(service => service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                            .Select(service => service.ServiceName)
-                            .FirstOrDefault() ?? "Unknown Service"
-                        : "No Service", // Handle empty ServiceIds
-                    LaundryShopName = b.LaundryServiceLog.LaundryShop != null
-                        ? b.LaundryServiceLog.LaundryShop.LaundryShopName
-                        : "Unknown Shop", // Handle missing LaundryShop
-                    PickupAddress = b.PickupAddress,
-                    DeliveryAddress = b.DeliveryAddress,
-                    BookingDate = b.BookingDate
+                        .FirstOrDefault() ?? "Unassigned",
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service",
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                        ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                        : "Unknown Shop"
                 })
-                .FirstOrDefaultAsync();
+                .ToListAsync();
 
-            // If no booking log is found
-            if (booking == null)
-            {
-                return NotFound("Booking log not found.");
-            }
-
-            return Ok(booking);
+            return Ok(bookingNotif);
         }
 
 
