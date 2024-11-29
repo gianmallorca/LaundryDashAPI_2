@@ -475,7 +475,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Where(b => b.BookingLogId == id && b.ClientId == user.Id) // Filter by BookingLogId and logged-in ClientId
                 .Select(b => new
                 {
-                    BookingLogId = b.BookingLogId,
+                    BookingLogId = id,
                     RiderName = context.Users
                         .Where(rider => rider.Id == b.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
