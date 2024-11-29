@@ -451,7 +451,7 @@ namespace LaundryDashAPI_2.Controllers
         //see full notif details
         [HttpGet("getClientPickupNotificationById/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult<object>> GetClientPickupNotificationById(Guid id)
+        public async Task<ActionResult> GetClientPickupNotificationById(Guid id)
         {
             // Validate user email claim
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -474,24 +474,23 @@ namespace LaundryDashAPI_2.Controllers
                 .Where(b => b.BookingLogId == id && b.ClientId == user.Id) // Filter by BookingLogId and logged-in ClientId
                 .Select(b => new
                 {
-                    BookingLogId = id,
+                    BookingLogId = b.BookingLogId,
                     RiderName = context.Users
                         .Where(rider => rider.Id == b.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
                         .FirstOrDefault() ?? "Unassigned", // Handle case where RiderId is null
-                    ServiceName = context.Services
-                        .Where(service =>
-                            b.LaundryServiceLog.ServiceIds != null &&
-                            service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                        .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    ServiceName = b.LaundryServiceLog.ServiceIds != null && b.LaundryServiceLog.ServiceIds.Any()
+                        ? context.Services
+                            .Where(service => service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                            .Select(service => service.ServiceName)
+                            .FirstOrDefault() ?? "Unknown Service"
+                        : "No Service", // Handle empty ServiceIds
                     LaundryShopName = b.LaundryServiceLog.LaundryShop != null
                         ? b.LaundryServiceLog.LaundryShop.LaundryShopName
                         : "Unknown Shop", // Handle missing LaundryShop
                     PickupAddress = b.PickupAddress,
                     DeliveryAddress = b.DeliveryAddress,
-                    BookingDate = b.BookingDate,
-                    
+                    BookingDate = b.BookingDate
                 })
                 .FirstOrDefaultAsync();
 
@@ -503,6 +502,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return Ok(booking);
         }
+
 
 
 
