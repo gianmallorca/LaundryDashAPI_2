@@ -685,7 +685,6 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-        //update delivery status component
         [HttpGet("pending-bookings-for-status-update")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
         public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
@@ -721,12 +720,17 @@ namespace LaundryDashAPI_2.Controllers
                     ClientName = context.Users
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client" // Default if no client is found
+                        .FirstOrDefault() ?? "Unknown Client", // Default if no client is found
+                    PickupAddress = booking.PickupAddress,
+                    DeliveryAddress = booking.DeliveryAddress,
+                    Weight = booking.Weight, // Assuming this is part of the BookingLog entity
+                    TotalPrice = booking.TotalPrice // Assuming this is part of the BookingLog entity
                 })
                 .ToListAsync();
 
             return Ok(pendingBookings);
         }
+
 
         //view accepted pickups, rider
         [HttpGet("GetAcceptedPickupsById/{id:Guid}")]
