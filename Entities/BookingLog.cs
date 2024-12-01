@@ -12,6 +12,7 @@ namespace LaundryDashAPI_2.Entities
         public Guid LaundryServiceLogId { get; set; }
         public LaundryServiceLog? LaundryServiceLog { get; set; }
         public DateTime BookingDate { get; set; }
+        public DateTime? DeliveryDate { get; set; } //added for delivery
         public decimal? TotalPrice { get; set; }
         public decimal? Weight { get; set; }
 

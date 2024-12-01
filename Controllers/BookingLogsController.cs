@@ -6,6 +6,7 @@ using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
+using LaundryDashAPI_2.Migrations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -692,7 +693,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        // notify the rider the laundry is ready to be picked up for delivery
+        // notify the rider the laundry is ready to be picked up for delivery 
         [HttpGet("notify-pickup-from-shop")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromShop(BookingLogDTO bookingLogDTO)
@@ -739,6 +740,98 @@ namespace LaundryDashAPI_2.Controllers
 
 
             return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+        }
+
+
+        //get delivery notif by id
+        [HttpGet("NotifyPickupFromShopById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult<BookingLogDTO>> NotifyForPickupFromShop(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Fetch the booking log by ID
+            var bookingLog = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(laundryServiceLog => laundryServiceLog.LaundryShop)
+                .FirstOrDefaultAsync(booking => booking.BookingLogId == id &&
+                                                 booking.IsReadyForDelivery == true &&
+                                                 booking.TransactionCompleted == false);
+
+            if (bookingLog == null)
+            {
+                return NotFound("Booking log not found or does not meet the criteria.");
+            }
+
+            // Fetch the client associated with the booking
+            var client = await context.Users
+                .FirstOrDefaultAsync(user => user.Id == bookingLog.ClientId);
+
+            if (client == null)
+            {
+                return NotFound("Client associated with the booking log not found.");
+            }
+
+            // Create the DTO
+            var bookingLogDTO = new BookingLogDTO
+            {
+                BookingLogId = bookingLog.BookingLogId,
+                LaundryShopName = bookingLog.LaundryServiceLog.LaundryShop.LaundryShopName,
+                BookingDate = bookingLog.BookingDate,
+                PickupAddress = bookingLog.PickupAddress,
+                DeliveryAddress = bookingLog.DeliveryAddress,
+                Note = bookingLog.Note,
+                ClientName = client.FirstName + " " + client.LastName
+            };
+
+            return Ok(bookingLogDTO);
+        }
+
+
+        // Kian Javellana has accepted the available delivery
+        [HttpGet("NotifyDeliveryIsAccepted")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyDeliveryIsAccepted()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            // Check if the email is null or empty
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user by email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch the pending bookings where the pickup is from the shop and transaction is not completed
+            var delivery = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(booking => booking.PickUpFromShop == true && booking.TransactionCompleted == false)
+                .OrderBy(booking => booking.DeliveryDate)
+                .Select(booking => new BookingLogDTO
+                {
+                    BookingLogId = booking.BookingLogId, // Include the BookingLogId
+                    RiderName = context.Users
+                        .Where(rider => rider.Id == booking.PickupRiderId)
+                        .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                        .FirstOrDefault() ?? "Unassigned", // If no rider assigned, set as "Unassigned"
+                    DeliveryDate = DateTime.UtcNow // Set the current delivery date as the system time
+                })
+                .ToListAsync();
+
+            return Ok(delivery);
         }
 
 
