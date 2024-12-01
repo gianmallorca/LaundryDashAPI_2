@@ -498,11 +498,11 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-
+        //fixed, dec 1 11:24
         //input weight to calculate total price, laundry shop interface
         [HttpPut("inputWeight/{id:Guid}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> InputWeight(Guid id, [FromBody] BookingLogCreationDTO booking)
+        public async Task<ActionResult> InputWeight(Guid id, [FromBody] BookingLogCreationDTO bookingLogCreationDTO)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -525,24 +525,33 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            var price = await context.LaundryServiceLogs
-                .Where(log => log.LaundryServiceLogId == booking.LaundryServiceLogId)
-                .Select(log => log.Price)
-                .FirstOrDefaultAsync();
+            var laundryServiceLog = await context.LaundryServiceLogs
+                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogCreationDTO.LaundryServiceLogId);
 
-            if (price == null || booking.Weight == null)
+            if (laundryServiceLog == null)
             {
-                return BadRequest("Price or weight is invalid.");
+                return NotFound($"Laundry service log with ID {bookingLogCreationDTO.LaundryServiceLogId} not found.");
+            }
+
+            if (!laundryServiceLog.Price.HasValue)
+            {
+                return BadRequest("The price for the laundry service log is not set.");
+            }
+
+            if (!bookingLogCreationDTO.Weight.HasValue)
+            {
+                return BadRequest("Weight is required to calculate the total price.");
             }
 
             // Update the existing booking log
-            existingBookingLog.Weight = booking.Weight;
-            existingBookingLog.TotalPrice = price.Value * booking.Weight.Value;
+            existingBookingLog.Weight = bookingLogCreationDTO.Weight;
+            existingBookingLog.TotalPrice = laundryServiceLog.Price.Value * bookingLogCreationDTO.Weight.Value;
 
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
 
         //update as of December 1, 2024
