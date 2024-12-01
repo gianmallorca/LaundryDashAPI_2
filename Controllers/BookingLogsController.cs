@@ -798,10 +798,10 @@ namespace LaundryDashAPI_2.Controllers
 
             // Query for pending bookings where TransactionCompleted == false
             var pendingBookings = await context.BookingLogs
-                .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop)
-                .Where(booking => booking.TransactionCompleted == false &&
-                                  booking.LaundryServiceLog.LaundryShop.AddedById == user.Id)
+                .Where(booking =>
+                    booking.TransactionCompleted == false &&
+                    (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
+                     (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id)))
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {
@@ -824,6 +824,7 @@ namespace LaundryDashAPI_2.Controllers
                     TotalPrice = booking.TotalPrice
                 })
                 .ToListAsync();
+
 
 
             return Ok(pendingBookings);
