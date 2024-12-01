@@ -497,6 +497,96 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
+        //input weight to calculate total price, laundry shop interface
+        [HttpPut("inputWeight")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> InputWeight([FromBody] BookingLogCreationDTO booking)
+        {
+            //
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var price = await context.LaundryServiceLogs
+             .Where(log => log.LaundryServiceLogId == booking.LaundryServiceLogId) // Match the related log
+             .Select(log => log.Price) // Select the price field
+             .FirstOrDefaultAsync(); // Retrieve the price (or default if not found)
+
+            // Ensure both price and weight are valid before performing multiplication
+            if (price == null || booking.Weight == null)
+            {
+                return BadRequest("Price or weight is invalid.");
+            }
+
+            var inputWeight = new BookingLog
+            {
+                Weight = booking.Weight,
+                TotalPrice = price.Value * booking.Weight.Value // Multiply price by weight safely
+            };
+
+            context.BookingLogs.Add(inputWeight);
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+        //update as of December 1, 2024
+        //notify client for laundry weight and total price
+        [HttpGet("NotifyClientForWeightAndTotalPrice")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult> NotifyClientForWeightAndTotalPrice(Guid id)
+        {
+            // Retrieve user email from JWT claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Fetch the user using email
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch the BookingLog along with LaundryShop and Service details
+            var bookingDetails = await context.BookingLogs
+                .Where(b => b.ClientId == user.Id && b.BookingLogId == id) // Filter by client and booking ID
+                .Select(b => new
+                {
+                    BookingLogId = b.BookingLogId,
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName, // Get laundry shop name
+                    ServiceName = context.Services
+                        .Where(s => b.LaundryServiceLog.ServiceIds != null && s.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(s => s.ServiceName)
+                        .FirstOrDefault(), // Get service name
+                    Weight = b.Weight,
+                    TotalPrice = b.TotalPrice
+                })
+                .FirstOrDefaultAsync();
+
+            if (bookingDetails == null)
+            {
+                return NotFound("No booking found for the provided ID.");
+            }
+
+            return Ok(bookingDetails);
+        }
+
+       
 
         //start laundry
         [HttpPut("hasStartedLaundry/{id}")]
