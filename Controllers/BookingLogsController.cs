@@ -500,11 +500,10 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //input weight to calculate total price, laundry shop interface
-        [HttpPut("inputWeight")]
+        [HttpPut("inputWeight/{id:Guid}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult> InputWeight([FromBody] BookingLogCreationDTO booking)
+        public async Task<ActionResult> InputWeight(Guid id, [FromBody] BookingLogCreationDTO booking)
         {
-            //
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -518,24 +517,28 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            var price = await context.LaundryServiceLogs
-             .Where(log => log.LaundryServiceLogId == booking.LaundryServiceLogId) // Match the related log
-             .Select(log => log.Price) // Select the price field
-             .FirstOrDefaultAsync(); // Retrieve the price (or default if not found)
+            var existingBookingLog = await context.BookingLogs
+                .FirstOrDefaultAsync(log => log.BookingLogId == id);
 
-            // Ensure both price and weight are valid before performing multiplication
+            if (existingBookingLog == null)
+            {
+                return NotFound("Booking log not found.");
+            }
+
+            var price = await context.LaundryServiceLogs
+                .Where(log => log.LaundryServiceLogId == booking.LaundryServiceLogId)
+                .Select(log => log.Price)
+                .FirstOrDefaultAsync();
+
             if (price == null || booking.Weight == null)
             {
                 return BadRequest("Price or weight is invalid.");
             }
 
-            var inputWeight = new BookingLog
-            {
-                Weight = booking.Weight,
-                TotalPrice = price.Value * booking.Weight.Value // Multiply price by weight safely
-            };
+            // Update the existing booking log
+            existingBookingLog.Weight = booking.Weight;
+            existingBookingLog.TotalPrice = price.Value * booking.Weight.Value;
 
-            context.BookingLogs.Add(inputWeight);
             await context.SaveChangesAsync();
 
             return NoContent();
@@ -621,44 +624,44 @@ namespace LaundryDashAPI_2.Controllers
 
         //notify client that laundry has started, example : Tidy Bubbles has started your laundry! Service: Regular Wash
         [HttpGet("has-started-laundry-notification")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
+{
+    var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+    if (string.IsNullOrEmpty(email))
+    {
+        return BadRequest("User email claim is missing.");
+    }
+
+    var user = await userManager.FindByEmailAsync(email);
+    if (user == null)
+    {
+        return NotFound("User not found.");
+    }
+
+    var startedLaundryLogs = await context.BookingLogs
+        .Include(booking => booking.LaundryServiceLog)
+            .ThenInclude(log => log.LaundryShop)
+        .Where(booking => booking.ClientId == user.Id && booking.HasStartedYourLaundry)
+        .OrderBy(booking => booking.BookingDate)
+        .Select(booking => new
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            BookingLogId = booking.BookingLogId, // Include the BookingLogId for frontend use
+            LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                : "Unknown Shop",
+            ServiceName = context.Services
+                .Where(service =>
+                    booking.LaundryServiceLog.ServiceIds != null &&
+                    service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                .Select(service => service.ServiceName)
+                .FirstOrDefault() ?? "Unknown Service"
+        })
+        .ToListAsync();
 
-            if (string.IsNullOrEmpty(email))
-            {
-                return BadRequest("User email claim is missing.");
-            }
-
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-
-            var startedLaundryLogs = await context.BookingLogs
-                .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop)
-                .Where(booking => booking.ClientId == user.Id && booking.HasStartedYourLaundry)
-                .OrderBy(booking => booking.BookingDate)
-                .Select(booking => new
-                {
-                    BookingLogId = booking.BookingLogId, // Include the BookingLogId for frontend use
-                    LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
-                        ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
-                        : "Unknown Shop",
-                    ServiceName = context.Services
-                        .Where(service =>
-                            booking.LaundryServiceLog.ServiceIds != null &&
-                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                        .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service"
-                })
-                .ToListAsync();
-
-            return Ok(startedLaundryLogs);
-        }
+    return Ok(startedLaundryLogs);
+}
 
 
 
