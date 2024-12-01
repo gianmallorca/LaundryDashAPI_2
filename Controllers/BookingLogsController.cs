@@ -101,7 +101,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-     
+
         [HttpGet("getPendingBookings")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> GetPendingBookings()
@@ -325,7 +325,7 @@ namespace LaundryDashAPI_2.Controllers
             var booking = await context.BookingLogs
                 .Include(b => b.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop details
-                .Where(b => b.BookingLogId == id && b.IsAcceptedByShop == true && b.PickUpFromClient == false &&!b.TransactionCompleted)
+                .Where(b => b.BookingLogId == id && b.IsAcceptedByShop == true && b.PickUpFromClient == false && !b.TransactionCompleted)
                 .Select(b => new BookingLogDTO
                 {
                     BookingLogId = id,
@@ -519,7 +519,8 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            bookingLog.HasStartedYourLaundry = true;
+            bookingLog.HasStartedYourLaundry = !bookingLog.HasStartedYourLaundry;
+
 
             await context.SaveChangesAsync();
 
@@ -591,7 +592,8 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            bookingLog.IsReadyForDelivery = true;
+            bookingLog.IsReadyForDelivery = !bookingLog.IsReadyForDelivery;
+
 
             await context.SaveChangesAsync();
 
@@ -604,7 +606,7 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromShop(BookingLogDTO bookingLogDTO)
         {
-         
+
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             // Check if the email is null or empty
@@ -868,7 +870,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            bookingLog.DepartedFromShop = true;
+            bookingLog.DepartedFromShop = !bookingLog.DepartedFromShop;
 
             await context.SaveChangesAsync();
 
@@ -895,7 +897,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            bookingLog.IsOutForDelivery = true;
+            bookingLog.IsOutForDelivery = !bookingLog.IsOutForDelivery;
 
             await context.SaveChangesAsync();
 
@@ -962,6 +964,13 @@ namespace LaundryDashAPI_2.Controllers
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
+
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
             // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
@@ -969,8 +978,12 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var pendingBookings = await context.BookingLogs
-                .Where(x => x.TransactionCompleted == true)
+                .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
+                    .ThenInclude(log => log.LaundryShop) // Include LaundryShop
+                .Where(x => x.TransactionCompleted == true &&
+                            x.LaundryServiceLog.LaundryShop.AddedById == user.Id) // Add the condition
                 .ToListAsync();
+
 
             return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
         }
