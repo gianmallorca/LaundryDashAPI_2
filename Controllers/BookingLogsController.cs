@@ -424,7 +424,8 @@ namespace LaundryDashAPI_2.Controllers
             var pendingBookings = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                     .ThenInclude(log => log.LaundryShop)
-                .Where(booking => booking.PickUpFromClient == true && booking.TransactionCompleted == false)
+                .Where(booking => booking.PickUpFromClient == true && booking.TransactionCompleted == false
+                            && booking.ClientId == user.Id)
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {
@@ -586,7 +587,7 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(bookingDetails);
         }
 
-       
+
 
         //start laundry
         [HttpPut("hasStartedLaundry/{id}")]
@@ -778,7 +779,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
         [HttpGet("pending-bookings-for-status-update")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrRiderAccount")]
         public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -797,29 +798,33 @@ namespace LaundryDashAPI_2.Controllers
 
             // Query for pending bookings where TransactionCompleted == false
             var pendingBookings = await context.BookingLogs
-                .Where(booking => booking.TransactionCompleted == false)
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(booking => booking.TransactionCompleted == false &&
+                                  booking.LaundryServiceLog.LaundryShop.AddedById == user.Id)
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {
-                    BookingLogId = booking.BookingLogId, // Add the BookingLogId to the response
+                    BookingLogId = booking.BookingLogId,
                     LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                    ServiceName = context.Services
-                        .Where(service =>
-                            booking.LaundryServiceLog.ServiceIds != null &&
-                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                        .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service", // Default if no service is found
+                    ServiceName = booking.LaundryServiceLog.ServiceIds != null
+                        ? context.Services
+                            .Where(service => service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                            .Select(service => service.ServiceName)
+                            .FirstOrDefault() ?? "Unknown Service"
+                        : "Unknown Service",
                     BookingDate = booking.BookingDate,
                     ClientName = context.Users
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client", // Default if no client is found
+                        .FirstOrDefault() ?? "Unknown Client",
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
-                    Weight = booking.Weight, // Assuming this is part of the BookingLog entity
-                    TotalPrice = booking.TotalPrice // Assuming this is part of the BookingLog entity
+                    Weight = booking.Weight,
+                    TotalPrice = booking.TotalPrice
                 })
                 .ToListAsync();
+
 
             return Ok(pendingBookings);
         }
