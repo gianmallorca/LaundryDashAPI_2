@@ -504,6 +504,7 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> InputWeight(Guid id, [FromBody] BookingLogCreationDTO bookingLogCreationDTO)
         {
+            // Retrieve the email of the authenticated user
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -517,6 +518,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
+            // Fetch the existing booking log by its ID
             var existingBookingLog = await context.BookingLogs
                 .FirstOrDefaultAsync(log => log.BookingLogId == id);
 
@@ -525,12 +527,19 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            // Validate the weight in the incoming DTO
+            if (!bookingLogCreationDTO.Weight.HasValue)
+            {
+                return BadRequest("Weight is required to calculate the total price.");
+            }
+
+            // Fetch the associated laundry service log if necessary
             var laundryServiceLog = await context.LaundryServiceLogs
-                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == bookingLogCreationDTO.LaundryServiceLogId);
+                .FirstOrDefaultAsync(log => log.LaundryServiceLogId == existingBookingLog.LaundryServiceLogId);
 
             if (laundryServiceLog == null)
             {
-                return NotFound($"Laundry service log with ID {bookingLogCreationDTO.LaundryServiceLogId} not found.");
+                return NotFound($"Laundry service log with ID {existingBookingLog.LaundryServiceLogId} not found.");
             }
 
             if (!laundryServiceLog.Price.HasValue)
@@ -538,12 +547,7 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("The price for the laundry service log is not set.");
             }
 
-            if (!bookingLogCreationDTO.Weight.HasValue)
-            {
-                return BadRequest("Weight is required to calculate the total price.");
-            }
-
-            // Update the existing booking log
+            // Update the booking log
             existingBookingLog.Weight = bookingLogCreationDTO.Weight;
             existingBookingLog.TotalPrice = laundryServiceLog.Price.Value * bookingLogCreationDTO.Weight.Value;
 
@@ -551,6 +555,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return NoContent();
         }
+
 
 
 
