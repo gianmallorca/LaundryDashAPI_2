@@ -622,45 +622,45 @@ namespace LaundryDashAPI_2.Controllers
         //notify client that laundry has started, example : Tidy Bubbles has started your laundry! Service: Regular Wash
         [HttpGet("has-started-laundry-notification")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult> HasStartedLaundryNotification(BookingLogDTO bookingLogDTO)
+        public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Validate the client's email claim
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            // Fetch the booking log to retrieve related details
-            var bookingLog = await context.BookingLogs
-                .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(log => log.LaundryShop) // Include the LaundryShop
-                .FirstOrDefaultAsync(booking => booking.BookingLogId == bookingLogDTO.BookingLogId);
-
-            if (bookingLog == null || bookingLog.LaundryServiceLog == null)
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
             {
-                return NotFound("Booking log or related laundry service log not found.");
+                return NotFound("User not found.");
             }
 
-            // Fetch the service name based on the ServiceIds in the laundry service log
-            var serviceName = context.Services
-                .Where(service =>
-                    bookingLog.LaundryServiceLog.ServiceIds != null &&
-                    service.ServiceId == bookingLog.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                .Select(service => service.ServiceName)
-                .FirstOrDefault() ?? "Unknown Service";
+            var startedLaundryLogs = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(booking => booking.ClientId == user.Id && booking.HasStartedYourLaundry)
+                .OrderBy(booking => booking.BookingDate)
+                .Select(booking => new
+                {
+                    BookingLogId = booking.BookingLogId, // Include the BookingLogId for frontend use
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                        ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                        : "Unknown Shop",
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service"
+                })
+                .ToListAsync();
 
-            // Retrieve the laundry shop name
-            var laundryShopName = bookingLog.LaundryServiceLog.LaundryShop?.LaundryShopName ?? "Unknown Laundry Shop";
-
-            // Return the notification details
-            return Ok(new
-            {
-                LaundryShopName = laundryShopName,
-                ServiceName = serviceName
-            });
+            return Ok(startedLaundryLogs);
         }
+
+
 
 
 
