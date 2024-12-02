@@ -735,7 +735,7 @@ namespace LaundryDashAPI_2.Controllers
                       booking => booking.ClientId, // Foreign Key in BookingLog
                       user => user.Id, // Primary Key in ApplicationUser
                       (booking, user) => new { booking, user }) // Combine both tables
-                .Where(x => x.booking.IsReadyForDelivery == true && x.booking.TransactionCompleted == false)
+                .Where(x => x.booking.IsReadyForDelivery == true && x.PickupFromShop == false && x.booking.TransactionCompleted == false)
                 .OrderBy(x => x.booking.BookingDate)
                 .Select(x => new BookingLogDTO
                 {
@@ -755,55 +755,93 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //get delivery notif by id
-        [HttpGet("NotifyPickupFromShopById/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
-        public async Task<ActionResult<BookingLogDTO>> NotifyForPickupFromShop(Guid id)
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        //[HttpGet("NotifyPickupFromShopById/{id}")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        //public async Task<ActionResult<BookingLogDTO>> NotifyForPickupFromShop(Guid id)
+        //{
+        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            // Check if the email is null or empty
-            if (string.IsNullOrEmpty(email))
+        //    // Check if the email is null or empty
+        //    if (string.IsNullOrEmpty(email))
+        //    {
+        //        return BadRequest("User email claim is missing.");
+        //    }
+
+        //    // Fetch the booking log by ID
+        //    var bookingLog = await context.BookingLogs
+        //        .Include(booking => booking.LaundryServiceLog)
+        //            .ThenInclude(laundryServiceLog => laundryServiceLog.LaundryShop)
+        //        .FirstOrDefaultAsync(booking => booking.BookingLogId == id &&
+        //                                         booking.IsReadyForDelivery == true &&
+        //                                         booking.TransactionCompleted == false);
+
+        //    if (bookingLog == null)
+        //    {
+        //        return NotFound("Booking log not found or does not meet the criteria.");
+        //    }
+
+        //    // Fetch the client associated with the booking
+        //    var client = await context.Users
+        //        .FirstOrDefaultAsync(user => user.Id == bookingLog.ClientId);
+
+        //    if (client == null)
+        //    {
+        //        return NotFound("Client associated with the booking log not found.");
+        //    }
+
+        //    // Create the DTO
+        //    var bookingLogDTO = new BookingLogDTO
+        //    {
+        //        BookingLogId = bookingLog.BookingLogId,
+        //        LaundryShopName = bookingLog.LaundryServiceLog.LaundryShop.LaundryShopName,
+        //        BookingDate = bookingLog.BookingDate,
+        //        PickupAddress = bookingLog.PickupAddress,
+        //        DeliveryAddress = bookingLog.DeliveryAddress,
+        //        Note = bookingLog.Note,
+        //        ClientName = client.FirstName + " " + client.LastName
+        //    };
+
+        //    return Ok(bookingLogDTO);
+        //}
+
+
+        
+        //rider accept delivery from shop
+        [HttpPut("accept-delivery/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult> AcceptDelivery(Guid id)
+        {
+            // Retrieve the email claim from the authenticated user
+            var email = User.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrWhiteSpace(email))
             {
-                return BadRequest("User email claim is missing.");
+                return BadRequest("The email claim is missing or invalid.");
             }
 
-            // Fetch the booking log by ID
-            var bookingLog = await context.BookingLogs
-                .Include(booking => booking.LaundryServiceLog)
-                    .ThenInclude(laundryServiceLog => laundryServiceLog.LaundryShop)
-                .FirstOrDefaultAsync(booking => booking.BookingLogId == id &&
-                                                 booking.IsReadyForDelivery == true &&
-                                                 booking.TransactionCompleted == false);
+            // Attempt to retrieve the user by their email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("The rider associated with this account does not exist.");
+            }
 
+            // Attempt to retrieve the booking log by its ID
+            var bookingLog = await context.BookingLogs.FirstOrDefaultAsync(x => x.BookingLogId == id);
             if (bookingLog == null)
             {
-                return NotFound("Booking log not found or does not meet the criteria.");
+                return NotFound("The specified booking log does not exist.");
             }
 
-            // Fetch the client associated with the booking
-            var client = await context.Users
-                .FirstOrDefaultAsync(user => user.Id == bookingLog.ClientId);
+            // Update the booking log with delivery information
+            bookingLog.PickUpFromShop = true;
+            bookingLog.DeliveryRiderId = user.Id;
 
-            if (client == null)
-            {
-                return NotFound("Client associated with the booking log not found.");
-            }
+            // Save the changes to the database
+            await context.SaveChangesAsync();
 
-            // Create the DTO
-            var bookingLogDTO = new BookingLogDTO
-            {
-                BookingLogId = bookingLog.BookingLogId,
-                LaundryShopName = bookingLog.LaundryServiceLog.LaundryShop.LaundryShopName,
-                BookingDate = bookingLog.BookingDate,
-                PickupAddress = bookingLog.PickupAddress,
-                DeliveryAddress = bookingLog.DeliveryAddress,
-                Note = bookingLog.Note,
-                ClientName = client.FirstName + " " + client.LastName
-            };
-
-            return Ok(bookingLogDTO);
+            return NoContent();
         }
-
 
         // Kian Javellana has accepted the available delivery
         [HttpGet("NotifyDeliveryIsAccepted")]
@@ -845,43 +883,7 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(delivery);
         }
 
-        //rider accept delivery from shop
-        [HttpPut("accept-delivery/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
-        public async Task<ActionResult> AcceptDelivery(Guid id)
-        {
-            // Retrieve the email claim from the authenticated user
-            var email = User.FindFirstValue(ClaimTypes.Email);
-
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return BadRequest("The email claim is missing or invalid.");
-            }
-
-            // Attempt to retrieve the user by their email
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                return NotFound("The rider associated with this account does not exist.");
-            }
-
-            // Attempt to retrieve the booking log by its ID
-            var bookingLog = await context.BookingLogs.FirstOrDefaultAsync(x => x.BookingLogId == id);
-            if (bookingLog == null)
-            {
-                return NotFound("The specified booking log does not exist.");
-            }
-
-            // Update the booking log with delivery information
-            bookingLog.PickUpFromShop = true;
-            bookingLog.DeliveryRiderId = user.Id;
-
-            // Save the changes to the database
-            await context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
+        //get for laundry shop and  rider
         [HttpGet("pending-bookings-for-status-update")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrRiderAccount")]
         public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
@@ -1077,6 +1079,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
+        //rider
         [HttpPut("out-for-delivery/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult> IsOutForDelivery(Guid id)
@@ -1090,6 +1093,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
+                .Where(x => x.DepartedFromShop == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1103,7 +1107,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return NoContent();
         }
-
+        //rider
         [HttpPut("received-by-client/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
         public async Task<ActionResult> IsReceivedByClient(Guid id)
@@ -1117,6 +1121,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
+                .Where(x => x.IsOutForDelivery == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1144,6 +1149,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
+                .Where(x => x.ReceivedByClient == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
