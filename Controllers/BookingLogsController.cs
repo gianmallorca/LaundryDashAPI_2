@@ -701,6 +701,11 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            if(bookingLog.HasStartedYourLaundry != true)
+            {
+                return BadRequest("Cannot update status, wait for laundry to finish");
+            }
+
             bookingLog.IsReadyForDelivery = !bookingLog.IsReadyForDelivery;
 
 
