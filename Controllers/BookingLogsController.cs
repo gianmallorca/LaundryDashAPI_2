@@ -638,44 +638,44 @@ namespace LaundryDashAPI_2.Controllers
 
         //notify client that laundry has started, example : Tidy Bubbles has started your laundry! Service: Regular Wash
         [HttpGet("has-started-laundry-notification")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
-{
-    var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-    if (string.IsNullOrEmpty(email))
-    {
-        return BadRequest("User email claim is missing.");
-    }
-
-    var user = await userManager.FindByEmailAsync(email);
-    if (user == null)
-    {
-        return NotFound("User not found.");
-    }
-
-    var startedLaundryLogs = await context.BookingLogs
-        .Include(booking => booking.LaundryServiceLog)
-            .ThenInclude(log => log.LaundryShop)
-        .Where(booking => booking.ClientId == user.Id && booking.HasStartedYourLaundry)
-        .OrderBy(booking => booking.BookingDate)
-        .Select(booking => new
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
         {
-            BookingLogId = booking.BookingLogId, // Include the BookingLogId for frontend use
-            LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
-                ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
-                : "Unknown Shop",
-            ServiceName = context.Services
-                .Where(service =>
-                    booking.LaundryServiceLog.ServiceIds != null &&
-                    service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                .Select(service => service.ServiceName)
-                .FirstOrDefault() ?? "Unknown Service"
-        })
-        .ToListAsync();
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-    return Ok(startedLaundryLogs);
-}
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var startedLaundryLogs = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(booking => booking.ClientId == user.Id && booking.HasStartedYourLaundry)
+                .OrderBy(booking => booking.BookingDate)
+                .Select(booking => new
+                {
+                    BookingLogId = booking.BookingLogId, // Include the BookingLogId for frontend use
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                        ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                        : "Unknown Shop",
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service"
+                })
+                .ToListAsync();
+
+            return Ok(startedLaundryLogs);
+        }
 
 
 
@@ -851,7 +851,7 @@ public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
             return Ok(delivery);
         }
 
-
+        //rider accept delivery from shop
         [HttpPut("accept-delivery/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult> AcceptDelivery(Guid id)
@@ -911,7 +911,7 @@ public async Task<ActionResult<List<object>>> HasStartedLaundryNotification()
                 .Where(booking =>
                     booking.TransactionCompleted == false &&
                     (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
-                     (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id)))
+                     (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {
