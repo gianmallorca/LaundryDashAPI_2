@@ -735,7 +735,7 @@ namespace LaundryDashAPI_2.Controllers
                       booking => booking.ClientId, // Foreign Key in BookingLog
                       user => user.Id, // Primary Key in ApplicationUser
                       (booking, user) => new { booking, user }) // Combine both tables
-                .Where(x => x.booking.IsReadyForDelivery == true && x.PickupFromShop == false && x.booking.TransactionCompleted == false)
+                .Where(x => x.booking.IsReadyForDelivery == true && x.booking.PickUpFromShop == false && x.booking.TransactionCompleted == false)
                 .OrderBy(x => x.booking.BookingDate)
                 .Select(x => new BookingLogDTO
                 {
@@ -1121,7 +1121,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
-                .Where(x => x.IsOutForDelivery == true)
+                .Where(x => x.DepartedFromShop == true && x.IsOutForDelivery == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1149,7 +1149,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
-                .Where(x => x.ReceivedByClient == true)
+                .Where(x => x.DepartedFromShop == true && x.IsOutForDelivery == true && x.ReceivedByClient == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
