@@ -478,9 +478,9 @@ namespace LaundryDashAPI_2.Controllers
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = id, // Include the BookingLogId
-                    RiderName = context.Users
-                        .Where(rider => rider.Id == booking.PickupRiderId)
-                        .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                    ClientName = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
                     ServiceName = context.Services
                         .Where(service =>
@@ -490,7 +490,9 @@ namespace LaundryDashAPI_2.Controllers
                         .FirstOrDefault() ?? "Unknown Service",
                     LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
                         ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
-                        : "Unknown Shop"
+                        : "Unknown Shop",
+                    PickupAddress = booking.PickupAddress,
+                    DeliveryAddress = booking.DeliveryAddress
                 })
                 .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
 
