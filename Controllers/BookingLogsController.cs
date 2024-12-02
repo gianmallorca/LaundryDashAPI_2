@@ -475,7 +475,7 @@ namespace LaundryDashAPI_2.Controllers
                     .ThenInclude(log => log.LaundryShop)
                 .Where(booking => booking.PickUpFromClient == true && booking.BookingLogId == id && booking.TransactionCompleted == false)
                 .OrderBy(booking => booking.BookingDate)
-                .Select(booking => new
+                .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = id, // Include the BookingLogId
                     RiderName = context.Users
@@ -492,10 +492,16 @@ namespace LaundryDashAPI_2.Controllers
                         ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
                         : "Unknown Shop"
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
+
+            if (bookingNotif == null)
+            {
+                return NotFound("Booking notification not found.");
+            }
 
             return Ok(bookingNotif);
         }
+
 
 
         //fixed, dec 1 11:24
