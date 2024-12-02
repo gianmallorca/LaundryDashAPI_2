@@ -482,6 +482,10 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
+                    RiderName = context.Users
+                        .Where(rider => rider.Id == booking.PickupRiderId)
+                        .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                        .FirstOrDefault() ?? "Unassigned",
                     ServiceName = context.Services
                         .Where(service =>
                             booking.LaundryServiceLog.ServiceIds != null &&
