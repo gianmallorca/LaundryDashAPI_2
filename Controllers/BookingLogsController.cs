@@ -620,6 +620,56 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(bookingNotifications);
         }
 
+        //click notif and display details
+        [HttpGet("NotifyClientForWeightAndTotalPriceById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult> NotifyClientForWeightAndTotalPriceById(Guid id)
+        {
+            // Retrieve user email from JWT claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Fetch the user using email
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Fetch the specific BookingLog for the client by ID
+            var bookingDetails = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(l => l.LaundryShop)
+                .Where(booking => booking.ClientId == user.Id && booking.BookingLogId == id) // Filter by client ID and booking ID
+                .OrderByDescending(booking => booking.BookingDate)
+                .Select(booking => new
+                {
+                    BookingLogId = booking.BookingLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service",
+                    Weight = booking.Weight,
+                    TotalPrice = booking.TotalPrice
+                })
+                .ToListAsync();
+
+            if (bookingDetails == null)
+            {
+                return NotFound("No booking details found for the provided ID.");
+            }
+
+            return Ok(bookingDetails);
+        }
+
 
 
 
