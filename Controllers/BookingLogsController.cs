@@ -86,6 +86,7 @@ namespace LaundryDashAPI_2.Controllers
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
                 Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
+                PaymentMethod = "Cash On Delivery"
 
             };
 
@@ -247,7 +248,7 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
-
+        //show available pickups for rider
         [HttpGet("NotifyPickupFromClient")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromClient()
@@ -303,6 +304,7 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(pendingBookings);
         }
 
+        //get through notification
         [HttpGet("GetPickupNotificationById/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<BookingLogDTO>> GetPickupNotifById(Guid id)
@@ -496,7 +498,8 @@ namespace LaundryDashAPI_2.Controllers
                         ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
                         : "Unknown Shop",
                     PickupAddress = booking.PickupAddress,
-                    DeliveryAddress = booking.DeliveryAddress
+                    DeliveryAddress = booking.DeliveryAddress,
+                    PaymentMethod = booking.PaymentMethod
                 })
                 .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
 
@@ -605,7 +608,8 @@ namespace LaundryDashAPI_2.Controllers
                         .Select(s => s.ServiceName)
                         .FirstOrDefault(), // Get service name
                     Weight = b.Weight,
-                    TotalPrice = b.TotalPrice
+                    TotalPrice = b.TotalPrice,
+                    PaymentMethod = b.PaymentMethod
                 })
                 .FirstOrDefaultAsync();
 
@@ -684,6 +688,7 @@ namespace LaundryDashAPI_2.Controllers
                             service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service"
+
                 })
                 .ToListAsync();
 

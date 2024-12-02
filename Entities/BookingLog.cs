@@ -1,6 +1,7 @@
 ﻿using LaundryDashAPI_2.Validations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using Microsoft.Identity.Client;
 using System.ComponentModel.DataAnnotations;
 
 namespace LaundryDashAPI_2.Entities
@@ -33,6 +34,8 @@ namespace LaundryDashAPI_2.Entities
 
         public bool IsAcceptedByShop { get; set; }
         public bool PickUpFromClient { get; set; }
+
+        public string? PaymentMethod { get; set; }
 
         public bool HasStartedYourLaundry { get; set; }//shop  ---
         public bool IsReadyForDelivery { get; set; }//shop

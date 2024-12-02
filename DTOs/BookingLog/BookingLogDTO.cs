@@ -18,7 +18,8 @@ namespace LaundryDashAPI_2.DTOs.BookingLog
         public string? Note { get; set; } // Optional note from the client
         public string ClientName { get; set; } // Full name of the client
         public string? RiderName { get; set; }//new add by gian
+        public string? PaymentMethod { get; set; }
 
-       
+
     }
 }

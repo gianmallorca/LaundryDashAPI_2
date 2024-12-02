@@ -8,5 +8,6 @@
         public string? Note { get; set; } // Optional note from the client
         public decimal? TotalPrice { get; set; } // Total price of the booking
         public decimal? Weight { get; set; } // Optional weight of the laundry
+        public string? PaymentMethod { get; set; }
     }
 }
