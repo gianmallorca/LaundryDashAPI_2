@@ -1077,6 +1077,11 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            if (bookingLog.IsReadyForDelivery != true)
+            {
+                return BadRequest("Laundry is not ready yet");
+            }
+
             bookingLog.DepartedFromShop = !bookingLog.DepartedFromShop;
 
             await context.SaveChangesAsync();
