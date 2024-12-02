@@ -637,7 +637,7 @@ namespace LaundryDashAPI_2.Controllers
             var bookingNotif = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                     .ThenInclude(log => log.LaundryShop)
-                .Where(b => b.ClientId == user.Id && b.BookingLogId == id) // Filter by client and booking ID
+                .Where(booking => booking.ClientId == user.Id && booking.BookingLogId == id) // Filter by client and booking ID
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new BookingLogDTO
                 {
