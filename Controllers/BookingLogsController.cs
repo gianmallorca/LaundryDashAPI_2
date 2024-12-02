@@ -578,49 +578,9 @@ namespace LaundryDashAPI_2.Controllers
         //notify client for laundry weight and total price
         [HttpGet("NotifyClientForWeightAndTotalPrice")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult> NotifyClientForWeightAndTotalPrice(Guid id)
+        public async Task<ActionResult> NotifyClientForWeightAndTotalPrice()
         {
             // Retrieve user email from JWT claims
-            //var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-            //if (string.IsNullOrEmpty(email))
-            //{
-            //    return BadRequest("User email claim is missing.");
-            //}
-
-            //// Fetch the user using email
-            //var user = await userManager.FindByEmailAsync(email);
-
-            //if (user == null)
-            //{
-            //    return NotFound("User not found.");
-            //}
-
-            //// Fetch the BookingLog along with LaundryShop and Service details
-            //var bookingDetails = await context.BookingLogs
-            //    .Where(b => b.ClientId == user.Id && b.BookingLogId == id) // Filter by client and booking ID
-            //    .Select(b => new BookingLogDTO
-            //    {
-            //        BookingLogId = b.BookingLogId,
-            //        LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName, // Get laundry shop name
-            //        ServiceName = context.Services
-            //            .Where(s => b.LaundryServiceLog.ServiceIds != null && s.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
-            //            .Select(s => s.ServiceName)
-            //            .FirstOrDefault(), // Get service name
-            //        Weight = b.Weight,
-            //        TotalPrice = b.TotalPrice,
-            //        PaymentMethod = b.PaymentMethod
-            //    })
-            //    .FirstOrDefaultAsync();
-
-            //if (bookingDetails == null)
-            //{
-            //    return NotFound("No booking found for the provided ID.");
-            //}
-
-            //return Ok(bookingDetails);
-
-
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -628,40 +588,38 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
+            // Fetch the user using email
             var user = await userManager.FindByEmailAsync(email);
+
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            var bookingNotif = await context.BookingLogs
+            // Fetch the list of BookingLogs for the client
+            var bookingNotifications = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                     .ThenInclude(log => log.LaundryShop)
-                .Where(booking => booking.ClientId == user.Id && booking.BookingLogId == id) // Filter by client and booking ID
-                .OrderBy(booking => booking.BookingDate)
-                .Select(booking => new BookingLogDTO
+                .Where(booking => booking.ClientId == user.Id)
+                .OrderByDescending(booking => booking.BookingDate)
+                .Select(booking => new
                 {
-                    BookingLogId = id, // Include the BookingLogId
+                    BookingLogId = booking.BookingLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
                     ServiceName = context.Services
                         .Where(service =>
                             booking.LaundryServiceLog.ServiceIds != null &&
                             service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service",
-                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                    TotalPrice = booking.TotalPrice,
                     Weight = booking.Weight,
-                    PaymentMethod = booking.PaymentMethod
+                    TotalPrice = booking.TotalPrice
                 })
-                .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
+                .ToListAsync();
 
-            if (bookingNotif == null)
-            {
-                return NotFound("Booking notification not found.");
-            }
-
-            return Ok(bookingNotif);
+            return Ok(bookingNotifications);
         }
+
 
 
 
@@ -1189,7 +1147,7 @@ namespace LaundryDashAPI_2.Controllers
 
         //rider
         [HttpPut("received-by-client/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult> IsReceivedByClient(Guid id)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
