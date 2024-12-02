@@ -581,6 +581,46 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<ActionResult> NotifyClientForWeightAndTotalPrice(Guid id)
         {
             // Retrieve user email from JWT claims
+            //var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            //if (string.IsNullOrEmpty(email))
+            //{
+            //    return BadRequest("User email claim is missing.");
+            //}
+
+            //// Fetch the user using email
+            //var user = await userManager.FindByEmailAsync(email);
+
+            //if (user == null)
+            //{
+            //    return NotFound("User not found.");
+            //}
+
+            //// Fetch the BookingLog along with LaundryShop and Service details
+            //var bookingDetails = await context.BookingLogs
+            //    .Where(b => b.ClientId == user.Id && b.BookingLogId == id) // Filter by client and booking ID
+            //    .Select(b => new BookingLogDTO
+            //    {
+            //        BookingLogId = b.BookingLogId,
+            //        LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName, // Get laundry shop name
+            //        ServiceName = context.Services
+            //            .Where(s => b.LaundryServiceLog.ServiceIds != null && s.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+            //            .Select(s => s.ServiceName)
+            //            .FirstOrDefault(), // Get service name
+            //        Weight = b.Weight,
+            //        TotalPrice = b.TotalPrice,
+            //        PaymentMethod = b.PaymentMethod
+            //    })
+            //    .FirstOrDefaultAsync();
+
+            //if (bookingDetails == null)
+            //{
+            //    return NotFound("No booking found for the provided ID.");
+            //}
+
+            //return Ok(bookingDetails);
+
+
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -588,37 +628,39 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
-            // Fetch the user using email
             var user = await userManager.FindByEmailAsync(email);
-
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            // Fetch the BookingLog along with LaundryShop and Service details
-            var bookingDetails = await context.BookingLogs
+            var bookingNotif = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
                 .Where(b => b.ClientId == user.Id && b.BookingLogId == id) // Filter by client and booking ID
-                .Select(b => new BookingLogDTO
+                .OrderBy(booking => booking.BookingDate)
+                .Select(booking => new BookingLogDTO
                 {
-                    BookingLogId = b.BookingLogId,
-                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName, // Get laundry shop name
+                    BookingLogId = id, // Include the BookingLogId
                     ServiceName = context.Services
-                        .Where(s => b.LaundryServiceLog.ServiceIds != null && s.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                        .Select(s => s.ServiceName)
-                        .FirstOrDefault(), // Get service name
-                    Weight = b.Weight,
-                    TotalPrice = b.TotalPrice,
-                    PaymentMethod = b.PaymentMethod
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service",
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    TotalPrice = booking.TotalPrice,
+                    Weight = booking.Weight,
+                    PaymentMethod = booking.PaymentMethod
                 })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
 
-            if (bookingDetails == null)
+            if (bookingNotif == null)
             {
-                return NotFound("No booking found for the provided ID.");
+                return NotFound("Booking notification not found.");
             }
 
-            return Ok(bookingDetails);
+            return Ok(bookingNotif);
         }
 
 
@@ -719,7 +761,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            if(bookingLog.HasStartedYourLaundry != true)
+            if (bookingLog.HasStartedYourLaundry != true)
             {
                 return BadRequest("Cannot update status, wait for laundry to finish");
             }
