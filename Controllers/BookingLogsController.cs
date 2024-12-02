@@ -905,7 +905,7 @@ namespace LaundryDashAPI_2.Controllers
             // Query for pending bookings where TransactionCompleted == false
             var pendingBookings = await context.BookingLogs
                 .Where(booking =>
-                    booking.TransactionCompleted == false &&
+                    booking.TransactionCompleted == false && booking.PickUpFromClient == true &&
                     (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
                      (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
                 .OrderBy(booking => booking.BookingDate)
