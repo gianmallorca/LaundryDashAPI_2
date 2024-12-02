@@ -1093,7 +1093,6 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
-                .Where(x => x.DepartedFromShop == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1101,12 +1100,22 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            // Check if the booking log has departed from the shop
+            if (bookingLog.DepartedFromShop != true)
+            {
+                return BadRequest("The booking log has not departed from the shop. The action cannot be performed until it has.");
+            }
+
+            // Toggle IsOutForDelivery status
             bookingLog.IsOutForDelivery = !bookingLog.IsOutForDelivery;
 
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
+
+
         //rider
         [HttpPut("received-by-client/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
@@ -1121,7 +1130,6 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
-                .Where(x => x.DepartedFromShop == true && x.IsOutForDelivery == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1129,12 +1137,20 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            // Check if the booking log has departed from the shop and is out for delivery
+            if (bookingLog.DepartedFromShop != true || bookingLog.IsOutForDelivery != true)
+            {
+                return BadRequest("The booking log has not departed from the shop or is not out for delivery. The action cannot be performed until both conditions are met.");
+            }
+
+            // Mark the booking as received by the client
             bookingLog.ReceivedByClient = true;
 
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
         [HttpPut("transaction-completed/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
@@ -1149,7 +1165,6 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var bookingLog = await context.BookingLogs
-                .Where(x => x.DepartedFromShop == true && x.IsOutForDelivery == true && x.ReceivedByClient == true)
                 .FirstOrDefaultAsync(x => x.BookingLogId == id);
 
             if (bookingLog == null)
@@ -1157,12 +1172,20 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
+            // Check if the booking log has departed from the shop, is out for delivery, and has been received by the client
+            if (bookingLog.DepartedFromShop != true || bookingLog.IsOutForDelivery != true || bookingLog.ReceivedByClient != true)
+            {
+                return BadRequest("The booking log must have departed from the shop, be out for delivery, and be received by the client before the transaction can be marked as completed.");
+            }
+
+            // Mark the transaction as completed
             bookingLog.TransactionCompleted = true;
 
             await context.SaveChangesAsync();
 
             return NoContent();
         }
+
 
         [HttpGet("notify-transaction-completed")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
