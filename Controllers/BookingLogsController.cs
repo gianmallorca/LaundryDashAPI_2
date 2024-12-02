@@ -851,6 +851,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("The specified booking log does not exist.");
             }
 
+
             // Update the booking log with delivery information
             bookingLog.PickUpFromShop = true;
             bookingLog.DeliveryRiderId = user.Id;
@@ -1069,7 +1070,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        //sent out for delivery
+        //sent out for delivery, shop
         [HttpPut("departed-from-shop/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult> DepartedFromShop(Guid id)
@@ -1090,9 +1091,9 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            if (bookingLog.IsReadyForDelivery != true)
+            if (bookingLog.PickUpFromShop != true)
             {
-                return BadRequest("Laundry is not ready yet");
+                return BadRequest("Not picked up yet");
             }
 
             bookingLog.DepartedFromShop = !bookingLog.DepartedFromShop;
