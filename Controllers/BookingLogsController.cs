@@ -715,7 +715,6 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> NotifyForPickupFromShop()
         {
-
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -730,28 +729,29 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             var pendingBookings = await context.BookingLogs
-           .Include(booking => booking.LaundryServiceLog)
-               .ThenInclude(laundryServiceLog => laundryServiceLog.LaundryShop)
-           .Join(context.Users, // Join with ApplicationUser
-                 booking => booking.ClientId, // Foreign Key in BookingLog
-                 user => user.Id, // Primary Key in ApplicationUser
-                 (booking, user) => new { booking, user }) // Combine both tables
-           .Where(x => x.booking.IsReadyForDelivery == true && x.booking.TransactionCompleted == false)
-           .OrderBy(x => x.booking.BookingDate)
-           .Select(x => new BookingLogDTO
-           {
-               BookingLogId = x.booking.BookingLogId,
-               LaundryShopName = x.booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-               BookingDate = x.booking.BookingDate,
-               PickupAddress = x.booking.PickupAddress,
-               DeliveryAddress = x.booking.DeliveryAddress,
-               Note = x.booking.Note,
-               ClientName = x.user.FirstName + " " + x.user.LastName // Get full name
-           })
-           .ToListAsync();
+                .Include(booking => booking.LaundryServiceLog)
+                    .ThenInclude(laundryServiceLog => laundryServiceLog.LaundryShop)
+                .Join(context.Users, // Join with ApplicationUser
+                      booking => booking.ClientId, // Foreign Key in BookingLog
+                      user => user.Id, // Primary Key in ApplicationUser
+                      (booking, user) => new { booking, user }) // Combine both tables
+                .Where(x => x.booking.IsReadyForDelivery == true && x.booking.TransactionCompleted == false)
+                .OrderBy(x => x.booking.BookingDate)
+                .Select(x => new BookingLogDTO
+                {
+                    BookingLogId = x.booking.BookingLogId,
+                    LaundryShopName = x.booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    BookingDate = x.booking.BookingDate,
+                    PickupAddress = x.booking.PickupAddress,
+                    LaundryShopAddress = x.booking.LaundryServiceLog.LaundryShop.Address, // Access the address here
+                    Note = x.booking.Note,
+                    ClientName = x.user.FirstName + " " + x.user.LastName // Get full name
+                })
+                .ToListAsync();
 
-                return Ok(pendingBookings);
-            }
+            return Ok(pendingBookings);
+        }
+
 
 
         //get delivery notif by id
