@@ -500,7 +500,10 @@ namespace LaundryDashAPI_2.Controllers
                         : "Unknown Shop",
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
-                    PaymentMethod = booking.PaymentMethod
+                    PaymentMethod = booking.PaymentMethod,
+                    ClientNumber = context.Users
+                      .Where(cn => cn.Id == booking.ClientId)
+                       .Select(cn => cn.PhoneNumber).FirstOrDefault() ?? "null"
                 })
                 .FirstOrDefaultAsync(); // Using FirstOrDefaultAsync as you are expecting a single result
 
