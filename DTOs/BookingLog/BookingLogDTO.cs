@@ -10,7 +10,7 @@ namespace LaundryDashAPI_2.DTOs.BookingLog
         public string LaundryShopAddress { get; set; }
         public string ServiceName { get; set; } // Name of the selected service
         public DateTime BookingDate { get; set; } // Date and time the booking was created
-        public DateTime DeliveryDate { get;set; } //added for delivery
+        public DateTime? DeliveryDate { get;set; } //added for delivery
         public decimal? TotalPrice { get; set; } // Total price of the booking
         public decimal? Weight { get; set; } // Weight of the laundry
         public string PickupAddress { get; set; } // Pickup address for the booking

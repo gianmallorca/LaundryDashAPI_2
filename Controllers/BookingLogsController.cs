@@ -2,6 +2,7 @@
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.DTOs.BookingLog;
+using LaundryDashAPI_2.DTOs.BookingProgress;
 using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
@@ -914,6 +915,7 @@ namespace LaundryDashAPI_2.Controllers
             // Update the booking log with delivery information
             bookingLog.PickUpFromShop = true;
             bookingLog.DeliveryRiderId = user.Id;
+            bookingLog.DeliveryDate = DateTime.UtcNow; // Set the current delivery date as the system time
 
             // Save the changes to the database
             await context.SaveChangesAsync();
@@ -954,12 +956,64 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(rider => rider.Id == booking.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
                         .FirstOrDefault() ?? "Unassigned", // If no rider assigned, set as "Unassigned"
-                    DeliveryDate = DateTime.UtcNow // Set the current delivery date as the system time
+                    
+                    
                 })
                 .ToListAsync();
 
             return Ok(delivery);
         }
+
+
+        [HttpGet("NotifyDeliveryIsAccepted/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<BookingLogDTO>> NotifyDeliveryIsAcceptedById(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var booking = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog)
+                    .ThenInclude(log => log.LaundryShop)
+                .Where(b => b.BookingLogId == id && b.PickUpFromShop == true && b.TransactionCompleted == false)
+                .Select(b => new BookingLogDTO
+                {
+                    BookingLogId = b.BookingLogId,
+                    RiderName = context.Users
+                        .Where(r => r.Id == b.PickupRiderId)
+                        .Select(r => $"{r.FirstName} {r.LastName}")
+                        .FirstOrDefault() ?? "Unassigned",
+                    ServiceName = b.LaundryServiceLog.Service.ServiceName ?? "Unknown Service",
+                    ClientName = context.Users
+                        .Where(c => c.Id == b.ClientId).Select(c => $"{c.FirstName} {c.LastName}")
+                        .FirstOrDefault() ?? "Unassigned",
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName ?? "Unknown Shop",
+                    LaundryShopAddress = b.LaundryServiceLog.LaundryShop.Address,
+                    DeliveryDate = b.DeliveryDate,
+                    Weight = b.Weight,
+                    TotalPrice = b.TotalPrice
+                })
+                .FirstOrDefaultAsync();
+
+            if (booking == null)
+            {
+                return NotFound("No delivery details found for the provided ID.");
+            }
+
+            return Ok(booking);
+        }
+
+
 
         //get for laundry shop and  rider
         [HttpGet("pending-bookings-for-status-update")]
@@ -1069,9 +1123,9 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //view accepted pickups, rider
-        [HttpGet("GetAcceptedPickupsById/{id:Guid}")]
+        [HttpGet("GetAcceptedPickups")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
-        public async Task<ActionResult<List<BookingLogDTO>>> GetAcceptedPickupsById()
+        public async Task<ActionResult<List<BookingLogDTO>>> GetAcceptedPickups()
         {
             // Step 1: Fetch the logged-in user's email for validation (optional)
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -1319,11 +1373,46 @@ namespace LaundryDashAPI_2.Controllers
 
         }
 
-        ///progress bar methods
-        ///
+        
+        //progress tracking method
+        [HttpGet("TrackParcelProgress/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult> TrackBookingProgress(Guid id)
+        {
+            // Retrieve parcel details
+            var parcel = await context.BookingLogs
+                .Where(p => p.BookingLogId == id)
+                .Select(p => new BookingProgressDTO
+                {
+                    HasStartedYourLaundry = p.HasStartedYourLaundry,
+                    IsReadyForDelivery = p.IsReadyForDelivery,
+                    PickUpFromShop = p.PickUpFromShop,
+                    DepartedFromShop = p.DepartedFromShop,
+                    IsOutForDelivery = p.IsOutForDelivery,
+                    ReceivedByClient = p.ReceivedByClient,
+                    TransactionCompleted = p.TransactionCompleted
+                })
+                .FirstOrDefaultAsync();
 
-        //[HttpGet("HasStartedIsTrue")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+            if (parcel == null)
+            {
+                return NotFound("Parcel not found.");
+            }
+
+            // Determine the current glowing step
+            var progress = new BookingTrackingProgressDTO
+            {
+                HasStartedYourLaundry = parcel.HasStartedYourLaundry,
+                IsReadyForDelivery = parcel.IsReadyForDelivery,
+                PickUpFromShop = parcel.PickUpFromShop,
+                DepartedFromShop = parcel.DepartedFromShop,
+                IsOutForDelivery = parcel.IsOutForDelivery,
+                ReceivedByClient = parcel.ReceivedByClient,
+                TransactionCompleted = parcel.TransactionCompleted
+            };
+
+            return Ok(progress);
+        }
 
 
 
