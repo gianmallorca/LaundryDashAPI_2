@@ -956,6 +956,10 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(rider => rider.Id == booking.PickupRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
                         .FirstOrDefault() ?? "Unassigned", // If no rider assigned, set as "Unassigned"
+
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = booking.LaundryServiceLog.Service.ServiceName,
+                    DeliveryDate = booking.DeliveryDate
                     
                     
                 })
