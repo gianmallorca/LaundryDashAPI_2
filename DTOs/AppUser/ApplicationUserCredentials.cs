@@ -9,6 +9,7 @@ namespace LaundryDashAPI_2.DTOs.AppUser
         public string FirstName { get; set; }
         [Required]
         public string LastName { get; set; }
+        public string PhoneNumber { get; set; }
         [Required]
         public DateTime? Birthday { get; set; }
 

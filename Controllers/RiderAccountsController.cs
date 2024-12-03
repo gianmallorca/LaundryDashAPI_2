@@ -87,7 +87,8 @@ namespace LaundryDashAPI_2.Controllers
                 BrgyStreet = riderUserCredentials.BrgyStreet,
                 VehicleType = riderUserCredentials.VehicleType,
                 VehicleCapacity = riderUserCredentials.VehicleCapacity,
-                DriversLicenseNumber = riderUserCredentials.DriversLicenseNumber
+                DriversLicenseNumber = riderUserCredentials.DriversLicenseNumber,
+                PhoneNumber = riderUserCredentials.PhoneNumber
             };
 
             // Attempt to create the user

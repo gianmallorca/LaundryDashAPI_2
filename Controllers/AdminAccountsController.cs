@@ -118,7 +118,8 @@ namespace LaundryDashAPI_2.Controllers
                 Gender = adminUserCredentials.Gender,
                 City = adminUserCredentials.City,
                 Barangay = adminUserCredentials.Barangay,
-                BrgyStreet = adminUserCredentials.BrgyStreet
+                BrgyStreet = adminUserCredentials.BrgyStreet,
+                PhoneNumber = adminUserCredentials.PhoneNumber
             };
 
             // Attempt to create the user

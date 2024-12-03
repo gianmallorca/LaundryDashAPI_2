@@ -955,7 +955,7 @@ namespace LaundryDashAPI_2.Controllers
                 {
                     BookingLogId = booking.BookingLogId, // Include the BookingLogId
                     RiderName = context.Users
-                        .Where(rider => rider.Id == booking.PickupRiderId)
+                        .Where(rider => rider.Id == booking.DeliveryRiderId)
                         .Select(rider => $"{rider.FirstName} {rider.LastName}")
                         .FirstOrDefault() ?? "Unassigned", // If no rider assigned, set as "Unassigned"
 
@@ -1002,9 +1002,12 @@ namespace LaundryDashAPI_2.Controllers
                 {
                     BookingLogId = b.BookingLogId,
                     RiderName = context.Users
-                        .Where(r => r.Id == b.PickupRiderId)
+                        .Where(r => r.Id == b.DeliveryRiderId)
                         .Select(r => $"{r.FirstName} {r.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
+                    RiderNumber = context.Users
+                      .Where(rn => rn.Id == b.DeliveryRiderId)
+                       .Select(rn => rn.PhoneNumber).FirstOrDefault() ?? "null",
                     ServiceName = context.Services
                         .Where(service =>
                             b.LaundryServiceLog.ServiceIds != null &&
@@ -1014,6 +1017,9 @@ namespace LaundryDashAPI_2.Controllers
                     ClientName = context.Users
                         .Where(c => c.Id == b.ClientId).Select(c => $"{c.FirstName} {c.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
+                    ClientNumber = context.Users
+                      .Where(rn => rn.Id == b.ClientId)
+                       .Select(rn => rn.PhoneNumber).FirstOrDefault() ?? "null",
                     LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName ?? "Unknown Shop",
                     LaundryShopAddress = b.LaundryServiceLog.LaundryShop.Address,
                     DeliveryDate = b.DeliveryDate,
@@ -1035,7 +1041,7 @@ namespace LaundryDashAPI_2.Controllers
         //get for laundry shop and  rider
         [HttpGet("pending-bookings-for-status-update")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrRiderAccount")]
-        public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
+        public async Task<ActionResult> GetPendingBookingsForStatusUpdate(BookingLog bookingLog)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -1050,6 +1056,12 @@ namespace LaundryDashAPI_2.Controllers
             {
                 return NotFound("User not found.");
             }
+
+            //added and test if working
+            var phoneNumber = await context.Users
+                        .Where(client => client.Id == bookingLog.ClientId)
+                        .Select(client => client.PhoneNumber)
+                        .FirstOrDefaultAsync();
 
             // Query for pending bookings where TransactionCompleted == false
             var pendingBookings = await context.BookingLogs
@@ -1073,6 +1085,7 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
                         .FirstOrDefault() ?? "Unknown Client",
+                    ClientNumber = phoneNumber,
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Weight = booking.Weight,
