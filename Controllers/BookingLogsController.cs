@@ -665,7 +665,7 @@ namespace LaundryDashAPI_2.Controllers
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
             if (bookingDetails == null)
             {
