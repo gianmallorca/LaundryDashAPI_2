@@ -958,7 +958,13 @@ namespace LaundryDashAPI_2.Controllers
                         .FirstOrDefault() ?? "Unassigned", // If no rider assigned, set as "Unassigned"
 
                     LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                    ServiceName = booking.LaundryServiceLog.Service.ServiceName,
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service",
+
                     DeliveryDate = booking.DeliveryDate
                     
                     
