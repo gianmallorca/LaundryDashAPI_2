@@ -658,7 +658,11 @@ namespace LaundryDashAPI_2.Controllers
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service",
                     Weight = booking.Weight,
-                    TotalPrice = booking.TotalPrice
+                    TotalPrice = booking.TotalPrice,
+                    BookingDate = booking.BookingDate,
+                    PaymentMethod = booking.PaymentMethod,
+                    PickupAddress = booking.PickupAddress,
+                    DeliveryAddress = booking.DeliveryAddress,
                 })
                 .ToListAsync();
 
@@ -1314,6 +1318,12 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<BookingLogDTO>>(bookingLogs);
 
         }
+
+        ///progress bar methods
+        ///
+
+        //[HttpGet("HasStartedIsTrue")]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
 
 
 
