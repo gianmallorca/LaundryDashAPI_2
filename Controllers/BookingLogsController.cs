@@ -601,7 +601,7 @@ namespace LaundryDashAPI_2.Controllers
             var bookingNotifications = await context.BookingLogs
                 .Include(booking => booking.LaundryServiceLog)
                     .ThenInclude(log => log.LaundryShop)
-                .Where(booking => booking.ClientId == user.Id)
+                .Where(booking => booking.ClientId == user.Id && (booking.Weight != null || booking.TotalPrice != null))
                 .OrderByDescending(booking => booking.BookingDate)
                 .Select(booking => new
                 {
@@ -617,6 +617,8 @@ namespace LaundryDashAPI_2.Controllers
                     TotalPrice = booking.TotalPrice
                 })
                 .ToListAsync();
+
+          
 
             return Ok(bookingNotifications);
         }
