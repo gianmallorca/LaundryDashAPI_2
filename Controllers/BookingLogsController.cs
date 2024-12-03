@@ -1005,7 +1005,12 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(r => r.Id == b.PickupRiderId)
                         .Select(r => $"{r.FirstName} {r.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
-                    ServiceName = b.LaundryServiceLog.Service.ServiceName ?? "Unknown Service",
+                    ServiceName = context.Services
+                        .Where(service =>
+                            b.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service",
                     ClientName = context.Users
                         .Where(c => c.Id == b.ClientId).Select(c => $"{c.FirstName} {c.LastName}")
                         .FirstOrDefault() ?? "Unassigned",
