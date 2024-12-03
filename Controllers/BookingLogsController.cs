@@ -300,7 +300,10 @@ namespace LaundryDashAPI_2.Controllers
                     ClientName = context.Users
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                        .FirstOrDefault() ?? "Unknown Client",
+                    ClientNumber = context.Users
+                      .Where(cn => cn.Id == booking.ClientId)
+                       .Select(cn => cn.PhoneNumber).FirstOrDefault() ?? "null"// Resolve client name or fallback
                 })
                 .OrderBy(booking => booking.BookingDate)
                 .ToListAsync();
@@ -353,7 +356,10 @@ namespace LaundryDashAPI_2.Controllers
                     ClientName = context.Users
                         .Where(client => client.Id == b.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                        .FirstOrDefault() ?? "Unknown Client",
+                    ClientNumber = context.Users
+                      .Where(cn => cn.Id == b.ClientId)
+                       .Select(cn => cn.PhoneNumber).FirstOrDefault() ?? "null"// Resolve client name or fallback
                 })
                 .FirstOrDefaultAsync();
 
