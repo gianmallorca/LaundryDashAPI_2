@@ -837,7 +837,8 @@ namespace LaundryDashAPI_2.Controllers
                     PickupAddress = x.booking.PickupAddress,
                     LaundryShopAddress = x.booking.LaundryServiceLog.LaundryShop.Address, // Access the address here
                     Note = x.booking.Note,
-                    ClientName = x.user.FirstName + " " + x.user.LastName // Get full name
+                    ClientName = x.user.FirstName + " " + x.user.LastName, // Get full name
+                    ClientNumber = x.user.PhoneNumber
                 })
                 .ToListAsync();
 
