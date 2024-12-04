@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
+using Umbraco.Core.Services.Implement;
 
 namespace LaundryDashAPI_2.Controllers
 {
@@ -77,7 +78,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-
+            // Create the booking log entity
             var bookingLog = new BookingLog
             {
                 BookingLogId = Guid.NewGuid(), // Generate new BookingLogId
@@ -87,11 +88,11 @@ namespace LaundryDashAPI_2.Controllers
                 DeliveryAddress = bookingLogCreationDTO.DeliveryAddress,
                 Note = bookingLogCreationDTO.Note,
                 ClientId = user.Id, // Set the current user as the ClientId
-                PaymentMethod = "Cash On Delivery"
-
+                PaymentMethod = "Cash On Delivery",
+                IsAcceptedByShop = false, // Ensure initial value is false
+                IsCanceled = false,
+                TransactionCompleted = false // Ensure the transaction is marked incomplete initially
             };
-
-
 
             // Add the new booking log to the context
             context.BookingLogs.Add(bookingLog);
@@ -99,11 +100,87 @@ namespace LaundryDashAPI_2.Controllers
             // Save changes to the database
             await context.SaveChangesAsync();
 
-            // Return a NoContent response (status code 204)
-            return NoContent();
+            // Schedule the auto-cancel job using Hangfire
+            Hangfire.BackgroundJob.Schedule(
+                () => AutoCancelBooking(bookingLog.BookingLogId),
+                TimeSpan.FromMinutes(15)
+            );
+
+            return CreatedAtAction(nameof(Post), new { id = bookingLog.BookingLogId }, bookingLog);
+
         }
 
 
+        /// Auto-cancel booking if not accepted within the specified time
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task AutoCancelBooking(Guid bookingLogId)
+        {
+            var booking = await context.BookingLogs.FirstOrDefaultAsync(b => b.BookingLogId == bookingLogId);
+
+            if (booking == null)
+                throw new Exception("Booking not found.");
+
+            if (booking.IsAcceptedByShop != true && !booking.IsCanceled)
+            {
+                booking.TransactionCompleted = true;
+                booking.IsCanceled = true; // Mark as explicitly canceled
+                context.Entry(booking).State = EntityState.Modified;
+                await context.SaveChangesAsync();
+
+                await NotifyBookingIsCanceled(booking.ClientId);
+            }
+
+        }
+
+
+        //notify booking has been canceled, Your booking for Regular Clothing at  Tidy Bubbles has been canceled after a specific time, you may book again
+  
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyBookingIsCanceled(string clientId)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Step 2: Fetch the logged-in user
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var canceled = await context.BookingLogs
+                .Include(booking => booking.LaundryServiceLog)
+                .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
+                .Where(booking =>
+                    booking.IsAcceptedByShop == false && 
+                    booking.IsCanceled != false && booking.TransactionCompleted != false && booking.ClientId == clientId) 
+                .Select(booking => new BookingLogDTO
+                {
+                    BookingLogId = booking.BookingLogId,
+                    LaundryServiceLogId = booking.LaundryServiceLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
+                        .Where(service =>
+                            booking.LaundryServiceLog.ServiceIds != null &&
+                            service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    BookingDate = booking.BookingDate,
+                    
+                    ClientName = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                })
+                .OrderBy(booking => booking.BookingDate)
+                .ToListAsync();
+
+            return Ok(canceled);
+        }
 
         [HttpGet("getPendingBookings")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
@@ -630,7 +707,7 @@ namespace LaundryDashAPI_2.Controllers
                 })
                 .ToListAsync();
 
-          
+
 
             return Ok(bookingNotifications);
         }
@@ -981,8 +1058,8 @@ namespace LaundryDashAPI_2.Controllers
                         .FirstOrDefault() ?? "Unknown Service",
 
                     DeliveryDate = booking.DeliveryDate
-                    
-                    
+
+
                 })
                 .ToListAsync();
 
@@ -1411,7 +1488,7 @@ namespace LaundryDashAPI_2.Controllers
 
         }
 
-        
+
         //progress tracking method
         [HttpGet("TrackParcelProgress/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]

@@ -31,6 +31,7 @@ namespace LaundryDashAPI_2.Entities
 
         public string ClientId { get; set; }
 
+        public bool IsCanceled { get; set; } //auto cancel
 
         public bool IsAcceptedByShop { get; set; }
         public bool PickUpFromClient { get; set; }

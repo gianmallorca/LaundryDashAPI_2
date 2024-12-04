@@ -1,4 +1,4 @@
-
+using Hangfire;
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.APIBehavior;
 using LaundryDashAPI_2.Entities;
@@ -24,40 +24,48 @@ namespace LaundryDashAPI_2
             // Add services to the container.
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
-
+            // Configure database context
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
             );
 
+            // Configure Hangfire
+            builder.Services.AddHangfire(config =>
+                config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"))); // Use your database connection string
+            builder.Services.AddHangfireServer(); // Add Hangfire server here, as recommended
+                                                  // Add BookingService as a dependency
+            builder.Services.AddScoped<BookingLog>();
 
+            // Configure controllers
             builder.Services.AddControllers(options =>
             {
                 options.Filters.Add(typeof(MyExceptionFilter));
                 options.Filters.Add(typeof(ParseBadRequest));
             }).ConfigureApiBehaviorOptions(BadRequestBehavior.Parse);
 
+            // Configure JWT authentication
             var jwtSettings = builder.Configuration.GetSection("Jwt");
-
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-                 .AddJwtBearer(options =>
-                 {
-                     options.TokenValidationParameters = new TokenValidationParameters
-                     {
-                         ValidateIssuer = false,
-                         ValidateAudience = false,
-                         ValidateLifetime = true,
-                         ValidateIssuerSigningKey = true,
-                         ValidIssuer = jwtSettings["Issuer"],
-                         ValidAudience = jwtSettings["Audience"],
-                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"])),
-                         ClockSkew = TimeSpan.Zero
-                     };
-                 });
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"])),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
 
+            // Configure authorization policies
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("IsAdmin", policy => policy.RequireClaim(ClaimTypes.Role, "admin"));
@@ -66,9 +74,9 @@ namespace LaundryDashAPI_2
                 options.AddPolicy("IsClientAccount", policy => policy.RequireClaim(ClaimTypes.Role, "clientAccount"));
 
                 options.AddPolicy("IsAdminOrLaundryShopAccount", policy =>
-                   policy.RequireAssertion(context =>
-                       context.User.HasClaim(c => c.Type == ClaimTypes.Role &&
-                           (c.Value == "admin" || c.Value == "laundryShopAccount"))));
+                    policy.RequireAssertion(context =>
+                        context.User.HasClaim(c => c.Type == ClaimTypes.Role &&
+                            (c.Value == "admin" || c.Value == "laundryShopAccount"))));
 
                 options.AddPolicy("IsAdminOrLaundryShopAccountOrClientAccount", policy =>
                     policy.RequireAssertion(context =>
@@ -81,7 +89,7 @@ namespace LaundryDashAPI_2
                             (c.Value == "admin" || c.Value == "laundryShopAccount" || c.Value == "riderAccount"))));
             });
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            // Configure Swagger for API documentation
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -100,58 +108,55 @@ namespace LaundryDashAPI_2
 
                 // Add security requirement
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference
                     {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
                     }
-                },
-                Array.Empty<string>()
-            }
-        });
+                });
             });
 
             // Configure CORS
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowSpecificOrigin",
-                    policy =>
-                    {
-                        policy.AllowAnyOrigin()
-                              .AllowAnyHeader()
-                              .AllowAnyMethod();
-
-
-
-                    });
+                options.AddPolicy("AllowSpecificOrigin", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
             });
 
+            // Add other services
             builder.Services.AddAutoMapper(typeof(Program));
             builder.Services.AddScoped<IFileStorageService, FileStorageService>();
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+
+            // Build the application
             var app = builder.Build();
 
-
-
-
-            // Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
+            // Configure Hangfire Dashboard (for monitoring jobs)
+            app.UseHangfireDashboard(); // No longer using `app.UseHangfireServer()`
+
             app.UseHttpsRedirection();
 
-          
             app.UseAuthentication();
-
             app.UseAuthorization();
 
             app.UseCors("AllowSpecificOrigin");
@@ -159,8 +164,6 @@ namespace LaundryDashAPI_2
             app.MapControllers();
 
             app.Run();
-
-        
         }
     }
 }
