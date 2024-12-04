@@ -112,7 +112,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         /// Auto-cancel booking if not accepted within the specified time
-  
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task AutoCancelBooking(Guid bookingLogId)
         {
             var booking = await context.BookingLogs.FirstOrDefaultAsync(b => b.BookingLogId == bookingLogId);
@@ -127,16 +127,15 @@ namespace LaundryDashAPI_2.Controllers
                 context.Entry(booking).State = EntityState.Modified;
                 await context.SaveChangesAsync();
 
-                await NotifyBookingIsCanceled(booking.ClientId);
             }
 
         }
 
 
         //notify booking has been canceled, Your booking for Regular Clothing at  Tidy Bubbles has been canceled after a specific time, you may book again
-        [HttpGet("notify-canceled/{clientId}")]
+        [HttpGet("notify-canceled")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
-        public async Task<ActionResult<List<BookingLogDTO>>> NotifyBookingIsCanceled(string clientId)
+        public async Task<ActionResult<List<BookingLogDTO>>> NotifyBookingIsCanceled()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -157,7 +156,7 @@ namespace LaundryDashAPI_2.Controllers
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
                 .Where(booking =>
                     booking.IsAcceptedByShop == false && 
-                    booking.IsCanceled != false && booking.TransactionCompleted != false && booking.ClientId == clientId) 
+                    booking.IsCanceled != false && booking.TransactionCompleted != false) 
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
