@@ -120,7 +120,7 @@ namespace LaundryDashAPI_2.Controllers
             if (booking == null)
                 throw new Exception("Booking not found.");
 
-            if (booking.IsAcceptedByShop != true && !booking.IsCanceled)
+            if (booking.IsAcceptedByShop != true && booking.IsCanceled != true)
             {
                 booking.TransactionCompleted = true;
                 booking.IsCanceled = true; // Mark as explicitly canceled
