@@ -1053,7 +1053,7 @@ namespace LaundryDashAPI_2.Controllers
         //get for laundry shop and  rider
         [HttpGet("pending-bookings-for-status-update")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrRiderAccount")]
-        public async Task<ActionResult> GetPendingBookingsForStatusUpdate(BookingLog bookingLog)
+        public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -1062,20 +1062,13 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
-            // Ensure user exists
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            //added and test if working
-            var phoneNumber = await context.Users
-                        .Where(client => client.Id == bookingLog.ClientId)
-                        .Select(client => client.PhoneNumber)
-                        .FirstOrDefaultAsync();
-
-            // Query for pending bookings where TransactionCompleted == false
+            // Query pending bookings and retrieve phone numbers based on the `ClientId`
             var pendingBookings = await context.BookingLogs
                 .Where(booking =>
                     booking.TransactionCompleted == false && booking.PickUpFromClient == true &&
@@ -1097,7 +1090,10 @@ namespace LaundryDashAPI_2.Controllers
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
                         .FirstOrDefault() ?? "Unknown Client",
-                    ClientNumber = phoneNumber,
+                    ClientNumber = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => client.PhoneNumber)
+                        .FirstOrDefault() ?? "Unknown Number",
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Weight = booking.Weight,
@@ -1105,10 +1101,9 @@ namespace LaundryDashAPI_2.Controllers
                 })
                 .ToListAsync();
 
-
-
             return Ok(pendingBookings);
         }
+
 
 
         [HttpGet("booking-log-details/{id}")]
