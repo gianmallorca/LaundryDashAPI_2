@@ -63,36 +63,6 @@ namespace LaundryDashAPI_2.Controllers
             };
         }
 
-        //[HttpPost("create")]
-        //public async Task<ActionResult<AuthenticationResponse>> Create([FromBody] ApplicationUserCredentials adminUserCredentials)
-        //{
-        //    // Create a new ApplicationUser with the provided credentials
-        //    var user = new ApplicationUser
-        //    {
-        //        FirstName = adminUserCredentials.FirstName,
-        //        LastName = adminUserCredentials.LastName,
-        //        UserName = adminUserCredentials.Email,
-        //        Email = adminUserCredentials.Email,
-        //        UserType = "Admin",
-        //        IsApproved = true // Set default approval status to true
-        //    };
-
-        //    // Attempt to create the user
-        //    var result = await userManager.CreateAsync(user, adminUserCredentials.Password);
-
-        //    if (result.Succeeded)
-        //    {
-        //        // Generate and return a token for the created user
-        //        return await BuildToken(adminUserCredentials, user);
-        //        await userManager.AddClaimAsync(user, new Claim("role", "admin"));
-        //    }
-        //    else
-        //    {
-
-        //        // Return the errors if user creation failed
-        //        return BadRequest(result.Errors);
-        //    }
-        //}
 
 
 
@@ -213,5 +183,50 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
 
         }
+
+
+        //dislay user profile
+        [HttpGet("GetUserProfile")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        public async Task<ActionResult<ApplicationUserDTO>> GetUserProfile()
+        {
+            // Get the email claim from the current user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Step 2: Fetch the logged-in user
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Step 3: Retrieve user profile details (assuming these are in the ApplicationUser entity)
+            var userProfile = await context.AppUsers
+                .Where(u => u.Email == email)
+                .Select(u => new ApplicationUserCredentials
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    UserType = context.Users.Where(x => x.Id == user.Id)
+                            .Select(x => x.UserType).FirstOrDefault(),
+                    Email = u.Email,
+                    UserAddress = context.Users.Where(x => x.Id == user.Id)
+                            .Select(x => $"{x.BrgyStreet},{x.Barangay}, {x.City}").FirstOrDefault()
+                })
+                .ToListAsync();
+
+            if (userProfile == null)
+            {
+                return NotFound("User profile not found.");
+            }
+
+            return Ok(userProfile);
+        }
+
     }
 }

@@ -1148,9 +1148,12 @@ namespace LaundryDashAPI_2.Controllers
             // Query pending bookings and retrieve phone numbers based on the `ClientId`
             var pendingBookings = await context.BookingLogs
                 .Where(booking =>
-                    booking.TransactionCompleted == false && booking.PickUpFromClient == true &&
-                    (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
-                     (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
+                        booking.TransactionCompleted == false &&
+                        booking.IsCanceled == false && // Use `==` for comparison
+                        booking.PickUpFromClient == true &&
+                        (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
+                         (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
+
                 .OrderBy(booking => booking.BookingDate)
                 .Select(booking => new
                 {

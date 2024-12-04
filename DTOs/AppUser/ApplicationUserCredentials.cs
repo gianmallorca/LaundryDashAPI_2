@@ -10,6 +10,7 @@ namespace LaundryDashAPI_2.DTOs.AppUser
         [Required]
         public string LastName { get; set; }
         public string PhoneNumber { get; set; }
+        public string UserType { get; set; }
         [Required]
         public DateTime? Birthday { get; set; }
 
@@ -38,6 +39,7 @@ namespace LaundryDashAPI_2.DTOs.AppUser
 
         // Address formatting
         public string Address => $"{City}, {Barangay}, {BrgyStreet}";
+        public string UserAddress { get; set; }
 
         //laundry shop account prop
         public string? TaxIdentificationNumber { get; set; }
