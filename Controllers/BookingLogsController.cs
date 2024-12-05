@@ -155,8 +155,8 @@ namespace LaundryDashAPI_2.Controllers
                 .Include(booking => booking.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include LaundryShop for details
                 .Where(booking =>
-                    booking.IsAcceptedByShop == false && 
-                    booking.IsCanceled != false && booking.TransactionCompleted != false) 
+                    booking.IsAcceptedByShop == false &&
+                    booking.IsCanceled != false && booking.TransactionCompleted != false)
                 .Select(booking => new BookingLogDTO
                 {
                     BookingLogId = booking.BookingLogId,
@@ -169,7 +169,7 @@ namespace LaundryDashAPI_2.Controllers
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
                     BookingDate = booking.BookingDate,
-                    
+
                     ClientName = context.Users
                         .Where(client => client.Id == booking.ClientId)
                         .Select(client => $"{client.FirstName} {client.LastName}")
@@ -1148,24 +1148,17 @@ namespace LaundryDashAPI_2.Controllers
                 }
 
                 // Query pending bookings
-                var pendingBookingsQuery = context.BookingLogs
-                    .Include(booking => booking.LaundryServiceLog)
-                        .ThenInclude(log => log.LaundryShop)
-                    .Where(booking =>
-                        booking.TransactionCompleted == false &&
-                        booking.IsCanceled == false &&
-                        booking.PickUpFromClient == true &&
+                var pendingBookings = await context.BookingLogs
+                    .Where(booking => !booking.TransactionCompleted &&
+!booking.IsCanceled &&
+                        booking.PickUpFromClient &&
                         (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
-                         (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
-                    .OrderBy(booking => booking.BookingDate);
-
-                var pendingBookings = await pendingBookingsQuery
+                         (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop)))
+                    .OrderBy(booking => booking.BookingDate)
                     .Select(booking => new
                     {
                         BookingLogId = booking.BookingLogId,
-                        LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
-                            ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
-                            : "Unknown Shop",
+                        LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
                         ServiceName = booking.LaundryServiceLog.ServiceIds != null
                             ? context.Services
                                 .Where(service => service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
@@ -1185,9 +1178,10 @@ namespace LaundryDashAPI_2.Controllers
                         DeliveryAddress = booking.DeliveryAddress,
                         Weight = booking.Weight,
                         TotalPrice = booking.TotalPrice,
-                        BookingStatus = DetermineBookingStatus(booking) // Ensure this method handles nulls safely
+                        BookingStatus = BookingLogsController.DetermineBookingStatus(booking), // Use static method
                     })
                     .ToListAsync();
+
 
                 return Ok(pendingBookings);
             }
@@ -1198,6 +1192,8 @@ namespace LaundryDashAPI_2.Controllers
                 return StatusCode(500, "An error occurred while processing the request.");
             }
         }
+
+       
 
 
 
@@ -1533,7 +1529,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Where(x => x.TransactionCompleted == false && x.ClientId == user.Id) // Filter for active bookings
                 .Select(b => new BookingLogDTO
                 {
-                    
+
                     ServiceName = context.Services
                         .Where(service => b.LaundryServiceLog.ServiceIds != null &&
                                           b.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
@@ -1556,7 +1552,7 @@ namespace LaundryDashAPI_2.Controllers
 
         // Helper method to determine booking status
         [ApiExplorerSettings(IgnoreApi = true)]
-        private string DetermineBookingStatus(BookingLog booking)
+        private static string DetermineBookingStatus(BookingLog booking)
         {
 
             if (booking.ReceivedByClient == true)
@@ -1608,13 +1604,13 @@ namespace LaundryDashAPI_2.Controllers
                                           b.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
                         .Select(service => service.ServiceName)
                         .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
-                   
+
                     LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
                     DeliveryDate = b.DeliveryDate,
                     Weight = b.Weight,
                     TotalPrice = b.TotalPrice,
                     BookingStatus = DetermineBookingStatus(b), // Resolve booking status
-                   
+
 
                 })
                 .ToListAsync();
