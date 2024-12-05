@@ -1147,7 +1147,8 @@ namespace LaundryDashAPI_2.Controllers
                     return NotFound("User not found.");
                 }
 
-                var pendingBookings = await context.BookingLogs
+                // Query pending bookings
+                var pendingBookingsQuery = context.BookingLogs
                     .Include(booking => booking.LaundryServiceLog)
                         .ThenInclude(log => log.LaundryShop)
                     .Where(booking =>
@@ -1156,11 +1157,15 @@ namespace LaundryDashAPI_2.Controllers
                         booking.PickUpFromClient == true &&
                         (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
                          (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
-                    .OrderBy(booking => booking.BookingDate)
+                    .OrderBy(booking => booking.BookingDate);
+
+                var pendingBookings = await pendingBookingsQuery
                     .Select(booking => new
                     {
                         BookingLogId = booking.BookingLogId,
-                        LaundryShopName = booking.LaundryServiceLog.LaundryShop?.LaundryShopName ?? "Unknown Shop",
+                        LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                            ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                            : "Unknown Shop",
                         ServiceName = booking.LaundryServiceLog.ServiceIds != null
                             ? context.Services
                                 .Where(service => service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
@@ -1180,7 +1185,7 @@ namespace LaundryDashAPI_2.Controllers
                         DeliveryAddress = booking.DeliveryAddress,
                         Weight = booking.Weight,
                         TotalPrice = booking.TotalPrice,
-                        BookingStatus = DetermineBookingStatus(booking)
+                        BookingStatus = DetermineBookingStatus(booking) // Ensure this method handles nulls safely
                     })
                     .ToListAsync();
 
@@ -1188,11 +1193,11 @@ namespace LaundryDashAPI_2.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while retrieving pending bookings for status update.");
+                // Log the error (replace Console.WriteLine with your logging framework)
+                Console.WriteLine($"Error: {ex.Message}");
                 return StatusCode(500, "An error occurred while processing the request.");
             }
         }
-
 
 
 
