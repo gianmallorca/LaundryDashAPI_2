@@ -1150,7 +1150,7 @@ namespace LaundryDashAPI_2.Controllers
                 // Query pending bookings
                 var pendingBookings = await context.BookingLogs
                     .Where(booking => !booking.TransactionCompleted &&
-!booking.IsCanceled &&
+                        !booking.IsCanceled &&
                         booking.PickUpFromClient &&
                         (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
                          (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop)))
@@ -1470,33 +1470,40 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Logged-in user not found.");
             }
 
-            var completedBookings = await context.BookingLogs
-                .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
-                    .ThenInclude(log => log.LaundryShop) // Include LaundryShop
+            var booking = await context.BookingLogs
+               .Include(b => b.LaundryServiceLog)
+                   .ThenInclude(log => log.LaundryShop)
                 .Where(x => x.TransactionCompleted == true && x.IsCanceled != true &&
-                            x.LaundryServiceLog.LaundryShop.AddedById == user.Id) // Add the condition
-                .Select(booking => new BookingLogDTO
-                {
-                    BookingLogId = booking.BookingLogId,
-                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                    ServiceName = booking.LaundryServiceLog.ServiceIds != null
-                        ? context.Services
-                            .Where(service => booking.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
-                            .Select(service => service.ServiceName)
-                            .FirstOrDefault() ?? "Unknown Service"
-                        : "Unknown Service",
-                    ClientName = context.Users
-                        .Where(client => client.Id == booking.ClientId)
-                        .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client",
-                    
-                    Weight = booking.Weight,
-                    TotalPrice = booking.TotalPrice,
-                    DeliveryDate = booking.DeliveryDate
-                })
-                .ToListAsync();
+                    x.LaundryServiceLog.LaundryShop.AddedById == user.Id)
+               .Select(b => new BookingLogDTO
+               {
+                   BookingLogId = b.BookingLogId,
+              
+                
+                   ServiceName = context.Services
+                       .Where(service =>
+                           b.LaundryServiceLog.ServiceIds != null &&
+                           service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                       .Select(service => service.ServiceName)
+                       .FirstOrDefault() ?? "Unknown Service",
+                   ClientName = context.Users
+                       .Where(c => c.Id == b.ClientId).Select(c => $"{c.FirstName} {c.LastName}")
+                       .FirstOrDefault() ?? "Unassigned",
 
-            return Ok(completedBookings);
+                   LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName ?? "Unknown Shop",
+                   PickupAddress = b.PickupAddress,
+                   DeliveryAddress = b.DeliveryAddress,
+                   DeliveryDate = b.DeliveryDate,
+                  
+               })
+               .ToListAsync();
+
+            if (booking == null)
+            {
+                return NotFound("No delivery details found for the provided ID.");
+            }
+
+            return Ok(booking);
         }
 
 
