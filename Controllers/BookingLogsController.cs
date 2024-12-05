@@ -1491,7 +1491,8 @@ namespace LaundryDashAPI_2.Controllers
                         .FirstOrDefault() ?? "Unknown Client",
                     
                     Weight = booking.Weight,
-                    TotalPrice = booking.TotalPrice
+                    TotalPrice = booking.TotalPrice,
+                    DeliveryDate = booking.DeliveryDate
                 })
                 .ToListAsync();
 
