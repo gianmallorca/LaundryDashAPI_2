@@ -1473,7 +1473,7 @@ namespace LaundryDashAPI_2.Controllers
             var completedBookings = await context.BookingLogs
                 .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
                     .ThenInclude(log => log.LaundryShop) // Include LaundryShop
-                .Where(x => x.TransactionCompleted == true &&
+                .Where(x => x.TransactionCompleted == true && x.IsCanceled != true &&
                             x.LaundryServiceLog.LaundryShop.AddedById == user.Id) // Add the condition
                 .Select(booking => new BookingLogDTO
                 {
