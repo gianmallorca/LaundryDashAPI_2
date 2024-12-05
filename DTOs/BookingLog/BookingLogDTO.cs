@@ -22,6 +22,9 @@ namespace LaundryDashAPI_2.DTOs.BookingLog
         public string? RiderName { get; set; }//new add by gian
         public string? PaymentMethod { get; set; }
 
+        //new
+        public string BookingStatus { get; set; }
+
 
     }
 }

@@ -132,7 +132,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        //notify booking has been canceled, Your booking for Regular Clothing at  Tidy Bubbles has been canceled after a specific time, you may book again
+        //notify booking has been canceled, Your booking for Regular Clothing at Tidy Bubbles has been canceled after a specific time, you may book again
         [HttpGet("notify-canceled")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
         public async Task<ActionResult<List<BookingLogDTO>>> NotifyBookingIsCanceled()
@@ -1177,7 +1177,8 @@ namespace LaundryDashAPI_2.Controllers
                     PickupAddress = booking.PickupAddress,
                     DeliveryAddress = booking.DeliveryAddress,
                     Weight = booking.Weight,
-                    TotalPrice = booking.TotalPrice
+                    TotalPrice = booking.TotalPrice,
+                    BookingStatus = DetermineBookingStatus(booking), // Resolve booking status
                 })
                 .ToListAsync();
 
@@ -1489,6 +1490,124 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<BookingLogDTO>>(bookingLogs);
 
         }
+
+
+        [HttpGet("GetActiveBookingsForClient")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> GetActiveBookingsForClient()
+        {
+            // Get the email of the logged-in user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user based on the email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
+
+            // Fetch active bookings for the client
+            var activeBookings = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
+                    .ThenInclude(log => log.LaundryShop) // Include LaundryShop
+                .Where(x => x.TransactionCompleted == false && x.ClientId == user.Id) // Filter for active bookings
+                .Select(b => new BookingLogDTO
+                {
+                    
+                    ServiceName = context.Services
+                        .Where(service => b.LaundryServiceLog.ServiceIds != null &&
+                                          b.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    BookingLogId = b.BookingLogId,
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+
+                    BookingStatus = DetermineBookingStatus(b), // Resolve booking status
+                    RiderName = context.Users
+                                .Where(rider => rider.Id == b.DeliveryRiderId)
+                                .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                        .FirstOrDefault() ?? "Pending" // Resolve client name or fallback)
+
+                })
+                .ToListAsync();
+
+            return Ok(activeBookings);
+        }
+
+        // Helper method to determine booking status
+        [ApiExplorerSettings(IgnoreApi = true)]
+        private string DetermineBookingStatus(BookingLog booking)
+        {
+
+            if (booking.ReceivedByClient == true)
+                return "Received by Client";
+            if (booking.IsOutForDelivery == true)
+                return "Out for Delivery";
+            if (booking.DepartedFromShop == true)
+                return "Departed from Shop";
+            if (booking.PickUpFromShop == true)
+                return "Ready for Pickup";
+            if (booking.IsReadyForDelivery == true)
+                return "Ready for Delivery";
+            if (booking.HasStartedYourLaundry == true)
+                return "Laundry Started";
+
+            return "Pending"; // Default status
+        }
+
+
+        [HttpGet("GetCompletedBookingsForClient")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsClientAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> GetCompletedBookingsForClient()
+        {
+            // Get the email of the logged-in user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user based on the email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
+
+            // Fetch active bookings for the client
+            var completedBookings = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
+                    .ThenInclude(log => log.LaundryShop) // Include LaundryShop
+                .Where(x => x.TransactionCompleted == true && x.IsCanceled != true && x.ClientId == user.Id) // Filter for active bookings
+                .Select(b => new BookingLogDTO
+                {
+                    BookingLogId = b.BookingLogId,
+                    ServiceName = context.Services
+                        .Where(service => b.LaundryServiceLog.ServiceIds != null &&
+                                          b.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                   
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    DeliveryDate = b.DeliveryDate,
+                    Weight = b.Weight,
+                    TotalPrice = b.TotalPrice,
+                    BookingStatus = DetermineBookingStatus(b), // Resolve booking status
+                   
+
+                })
+                .ToListAsync();
+
+            return Ok(completedBookings);
+        }
+
+
 
 
         //progress tracking method
