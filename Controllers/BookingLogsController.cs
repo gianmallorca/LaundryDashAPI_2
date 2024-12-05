@@ -1132,58 +1132,73 @@ namespace LaundryDashAPI_2.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrRiderAccount")]
         public async Task<ActionResult> GetPendingBookingsForStatusUpdate()
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrEmpty(email))
+            try
             {
-                return BadRequest("User email claim is missing.");
-            }
+                var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-            var user = await userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
+                if (string.IsNullOrEmpty(email))
+                {
+                    return BadRequest("User email claim is missing.");
+                }
 
-            // Query pending bookings and retrieve phone numbers based on the `ClientId`
-            var pendingBookings = await context.BookingLogs
-                .Where(booking =>
+                var user = await userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                // Query pending bookings
+                var pendingBookingsQuery = context.BookingLogs
+                    .Include(booking => booking.LaundryServiceLog)
+                        .ThenInclude(log => log.LaundryShop)
+                    .Where(booking =>
                         booking.TransactionCompleted == false &&
-                        booking.IsCanceled == false && // Use `==` for comparison
+                        booking.IsCanceled == false &&
                         booking.PickUpFromClient == true &&
                         (booking.LaundryServiceLog.LaundryShop.AddedById == user.Id ||
                          (booking.DeliveryRiderId != null && booking.DeliveryRiderId == user.Id && booking.PickUpFromShop == true)))
+                    .OrderBy(booking => booking.BookingDate);
 
-                .OrderBy(booking => booking.BookingDate)
-                .Select(booking => new
-                {
-                    BookingLogId = booking.BookingLogId,
-                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
-                    ServiceName = booking.LaundryServiceLog.ServiceIds != null
-                        ? context.Services
-                            .Where(service => service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
-                            .Select(service => service.ServiceName)
-                            .FirstOrDefault() ?? "Unknown Service"
-                        : "Unknown Service",
-                    BookingDate = booking.BookingDate,
-                    ClientName = context.Users
-                        .Where(client => client.Id == booking.ClientId)
-                        .Select(client => $"{client.FirstName} {client.LastName}")
-                        .FirstOrDefault() ?? "Unknown Client",
-                    ClientNumber = context.Users
-                        .Where(client => client.Id == booking.ClientId)
-                        .Select(client => client.PhoneNumber)
-                        .FirstOrDefault() ?? "Unknown Number",
-                    PickupAddress = booking.PickupAddress,
-                    DeliveryAddress = booking.DeliveryAddress,
-                    Weight = booking.Weight,
-                    TotalPrice = booking.TotalPrice,
-                    BookingStatus = DetermineBookingStatus(booking), // Resolve booking status
-                })
-                .ToListAsync();
+                var pendingBookings = await pendingBookingsQuery
+                    .Select(booking => new
+                    {
+                        BookingLogId = booking.BookingLogId,
+                        LaundryShopName = booking.LaundryServiceLog.LaundryShop != null
+                            ? booking.LaundryServiceLog.LaundryShop.LaundryShopName
+                            : "Unknown Shop",
+                        ServiceName = booking.LaundryServiceLog.ServiceIds != null
+                            ? context.Services
+                                .Where(service => service.ServiceId == booking.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                                .Select(service => service.ServiceName)
+                                .FirstOrDefault() ?? "Unknown Service"
+                            : "Unknown Service",
+                        BookingDate = booking.BookingDate,
+                        ClientName = context.Users
+                            .Where(client => client.Id == booking.ClientId)
+                            .Select(client => $"{client.FirstName} {client.LastName}")
+                            .FirstOrDefault() ?? "Unknown Client",
+                        ClientNumber = context.Users
+                            .Where(client => client.Id == booking.ClientId)
+                            .Select(client => client.PhoneNumber)
+                            .FirstOrDefault() ?? "Unknown Number",
+                        PickupAddress = booking.PickupAddress,
+                        DeliveryAddress = booking.DeliveryAddress,
+                        Weight = booking.Weight,
+                        TotalPrice = booking.TotalPrice,
+                        BookingStatus = DetermineBookingStatus(booking) // Ensure this method handles nulls safely
+                    })
+                    .ToListAsync();
 
-            return Ok(pendingBookings);
+                return Ok(pendingBookings);
+            }
+            catch (Exception ex)
+            {
+                // Log the error (replace Console.WriteLine with your logging framework)
+                Console.WriteLine($"Error: {ex.Message}");
+                return StatusCode(500, "An error occurred while processing the request.");
+            }
         }
+
 
 
 
