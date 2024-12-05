@@ -1459,29 +1459,45 @@ namespace LaundryDashAPI_2.Controllers
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
-
-            var user = await userManager.FindByEmailAsync(email);
-
-            if (user == null)
-            {
-                return NotFound("Logged-in user not found.");
-            }
-            // Check if the email is null or empty
             if (string.IsNullOrEmpty(email))
             {
                 return BadRequest("User email claim is missing.");
             }
 
-            var pendingBookings = await context.BookingLogs
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
+
+            var completedBookings = await context.BookingLogs
                 .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
                     .ThenInclude(log => log.LaundryShop) // Include LaundryShop
                 .Where(x => x.TransactionCompleted == true &&
                             x.LaundryServiceLog.LaundryShop.AddedById == user.Id) // Add the condition
+                .Select(booking => new BookingLogDTO
+                {
+                    BookingLogId = booking.BookingLogId,
+                    LaundryShopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = booking.LaundryServiceLog.ServiceIds != null
+                        ? context.Services
+                            .Where(service => booking.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
+                            .Select(service => service.ServiceName)
+                            .FirstOrDefault() ?? "Unknown Service"
+                        : "Unknown Service",
+                    ClientName = context.Users
+                        .Where(client => client.Id == booking.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client",
+                    
+                    Weight = booking.Weight,
+                    TotalPrice = booking.TotalPrice
+                })
                 .ToListAsync();
 
-
-            return Ok(mapper.Map<List<BookingLogDTO>>(pendingBookings));
+            return Ok(completedBookings);
         }
+
 
 
 
