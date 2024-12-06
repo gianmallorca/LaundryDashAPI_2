@@ -88,13 +88,13 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //gets laundry shop picture
- 
+
 
         [HttpGet("get-image-by-id/{id:Guid}")]
         public async Task<IActionResult> GetImageById(Guid id)
         {
-            // Define the folder path where images are stored
-            var folderPath = @"C:\Users\Mark Roed Roda\source\repos\LaundryDashAPI_2\LaundryShopImages";
+            // Define the folder path where images are stored (without the "LaundryShopImages" folder part)
+            var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash New API";
 
             // Check if the folder exists
             if (!Directory.Exists(folderPath))
@@ -113,7 +113,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Laundry shop not found.");
             }
 
-            // Get the image file name from the LaundryShopPicture property
+            // Get the image file name from the LaundryShopPicture property (this is where we get the path or filename)
             var imageFileName = laundryShop.LaundryShopPicture;
 
             // Ensure the image filename is not null or empty
@@ -122,7 +122,8 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("No image associated with this laundry shop.");
             }
 
-            // Build the full file path by combining the folder path and image file name
+            // Build the full file path by combining the folder path and image file name (path is from the database here)
+            // Ensure you only append the file name, not the entire folder part
             var filePath = Path.Combine(folderPath, imageFileName);
 
             // Check if the file exists
@@ -149,6 +150,7 @@ namespace LaundryDashAPI_2.Controllers
             // Return the image as a file response with the detected MIME type
             return File(imageBytes, contentType);
         }
+
 
 
 
