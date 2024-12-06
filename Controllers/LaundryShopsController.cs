@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -87,34 +88,75 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //gets laundry shop picture
-        [HttpGet("images/{id}")]
-        public async Task<IActionResult> GetImage(string id)
+ 
+
+        [HttpGet("get-image-by-id/{id:Guid}")]
+        public async Task<IActionResult> GetImageById(Guid id)
         {
-            // Retrieve the LaundryShop record
-            var shop = await context.LaundryShops
-                .Where(x => x.LaundryShopPicture == id)
+            // Define the folder path where images are stored
+            var folderPath = @"C:\Users\Mark Roed Roda\source\repos\LaundryDashAPI_2\LaundryShopImages";
+
+            // Check if the folder exists
+            if (!Directory.Exists(folderPath))
+            {
+                return NotFound("Image folder does not exist.");
+            }
+
+            // Retrieve the laundry shop from the database by the given ID
+            var laundryShop = await context.LaundryShops
+                .Where(shop => shop.LaundryShopId == id)
                 .FirstOrDefaultAsync();
 
-            if (shop == null)
+            // Check if the laundry shop exists
+            if (laundryShop == null)
             {
-                return NotFound("Laundry shop or picture not found.");
+                return NotFound("Laundry shop not found.");
             }
 
-            // Construct the file path
-            var imagePath = Path.Combine("LaundryShopImages", shop.LaundryShopPicture);
-            if (!System.IO.File.Exists(imagePath))
+            // Get the image file name from the LaundryShopPicture property
+            var imageFileName = laundryShop.LaundryShopPicture;
+
+            // Ensure the image filename is not null or empty
+            if (string.IsNullOrEmpty(imageFileName))
             {
-                return NotFound("Image not found.");
+                return NotFound("No image associated with this laundry shop.");
             }
 
-            var image = System.IO.File.OpenRead(imagePath);
-            return File(image, "image/jpeg"); // Adjust content type as needed
+            // Build the full file path by combining the folder path and image file name
+            var filePath = Path.Combine(folderPath, imageFileName);
+
+            // Check if the file exists
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("Image file not found.");
+            }
+
+            // Read the image file bytes
+            var imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+            // Use FileExtensionContentTypeProvider to get the MIME type based on the file extension
+            var provider = new FileExtensionContentTypeProvider();
+
+            // Get the file extension from the image file
+            var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+
+            // Check if the MIME type is available for the file extension
+            if (!provider.TryGetContentType(fileExtension, out var contentType))
+            {
+                contentType = "application/octet-stream"; // Default to binary if MIME type is not found
+            }
+
+            // Return the image as a file response with the detected MIME type
+            return File(imageBytes, contentType);
         }
 
-/// <summary>
-/// ////////////////////////////////////////////////////
-/// </summary>
-/// <returns></returns>
+
+
+
+        /// <summary>
+        /// ////////////////////////////////////////////////////
+        /// </summary>
+        /// <returns></returns>
 
 
         [HttpGet("getLaundryShopByUserId")]
