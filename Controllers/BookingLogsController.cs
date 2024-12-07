@@ -1311,6 +1311,65 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(acceptedPickups);
         }
 
+        [HttpGet("GetAcceptedDeliveries")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> GetAcceptedDeliveries()
+        {
+            // Step 1: Fetch the logged-in user's email for validation (optional)
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
+
+            // Step 2: Query bookings accepted by the user with the provided ID
+            var acceptedPickups = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog)
+                .ThenInclude(log => log.LaundryShop) // Include related LaundryShop
+                .Where(b => b.IsAcceptedByShop == true && // Booking is accepted by the shop
+                            b.DeliveryRiderId == user.Id && b.PickUpFromShop == true &&           // Match the provided userId (RiderId)
+                            !b.TransactionCompleted)      // Ensure the transaction isn't completed
+                .Select(b => new BookingLogDTO
+                {
+                    BookingLogId = b.BookingLogId,
+                    LaundryServiceLogId = b.LaundryServiceLogId,
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ServiceName = context.Services
+                        .Where(service => b.LaundryServiceLog.ServiceIds != null &&
+                                          service.ServiceId == b.LaundryServiceLog.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    BookingDate = b.BookingDate,
+                    TotalPrice = b.TotalPrice,
+                    Weight = b.Weight,
+                    PickupAddress = b.PickupAddress,
+                    DeliveryAddress = b.DeliveryAddress,
+                    Note = b.Note,
+                    ClientName = context.Users
+                        .Where(client => client.Id == b.ClientId)
+                        .Select(client => $"{client.FirstName} {client.LastName}")
+                        .FirstOrDefault() ?? "Unknown Client" // Resolve client name or fallback
+                })
+                .OrderBy(b => b.BookingDate) // Sort by booking date
+                .ToListAsync();
+
+            // Step 3: Handle empty result
+            if (!acceptedPickups.Any())
+            {
+                return NotFound("No accepted pickups found for the specified user.");
+            }
+
+            // Step 4: Return the list of accepted pickups
+            return Ok(acceptedPickups);
+        }
+
 
         //sent out for delivery, shop
         [HttpPut("departed-from-shop/{id}")]
