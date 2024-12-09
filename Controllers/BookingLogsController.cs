@@ -1275,8 +1275,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Include(b => b.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include related LaundryShop
                 .Where(b => b.IsAcceptedByShop == true && // Booking is accepted by the shop
-                            b.PickupRiderId == user.Id && b.PickUpFromClient == true &&           // Match the provided userId (RiderId)
-                            !b.TransactionCompleted)      // Ensure the transaction isn't completed
+            b.PickupRiderId == user.Id && b.PickUpFromClient == true)
                 .Select(b => new BookingLogDTO
                 {
                     BookingLogId = b.BookingLogId,
@@ -1338,8 +1337,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Include(b => b.LaundryServiceLog)
                 .ThenInclude(log => log.LaundryShop) // Include related LaundryShop
                 .Where(b => b.IsAcceptedByShop == true && // Booking is accepted by the shop
-                            b.DeliveryRiderId == user.Id && b.PickUpFromShop == true &&           // Match the provided userId (RiderId)
-                            !b.TransactionCompleted)      // Ensure the transaction isn't completed
+            b.DeliveryRiderId == user.Id && b.PickUpFromShop == true)
                 .Select(b => new BookingLogDTO
                 {
                     BookingLogId = b.BookingLogId,
@@ -1697,6 +1695,62 @@ namespace LaundryDashAPI_2.Controllers
                         .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
 
                     LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    DeliveryDate = b.DeliveryDate,
+                    Weight = b.Weight,
+                    TotalPrice = b.TotalPrice,
+                    BookingStatus = DetermineBookingStatus(b), // Resolve booking status
+
+
+                })
+                .ToListAsync();
+
+            return Ok(completedBookings);
+        }
+
+        [HttpGet("GetCompletedBookingsForLaundryShopOwner")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<List<BookingLogDTO>>> GetCompletedBookingsForLaundryShop()
+        {
+            // Get the email of the logged-in user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Find the user based on the email
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("Logged-in user not found.");
+            }
+
+            // Fetch active bookings for the client
+            var completedBookings = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog) // Include LaundryServiceLog
+                    .ThenInclude(log => log.LaundryShop) // Include LaundryShop
+                .Where(x => x.TransactionCompleted == true && x.IsCanceled != true && x.LaundryServiceLog.LaundryShop.AddedById == user.Id) // Filter for active bookings
+                .Select(b => new BookingLogDTO
+                {
+                    BookingLogId = b.BookingLogId,
+                    ServiceName = context.Services
+                        .Where(service => b.LaundryServiceLog.ServiceIds != null &&
+                                          b.LaundryServiceLog.ServiceIds.Contains(service.ServiceId))
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback 
+
+                    LaundryShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName,
+                    ClientName = context.Users
+                                .Where(client => client.Id == b.ClientId)
+                                .Select(client => $"{client.FirstName} {client.LastName}")
+                                .FirstOrDefault() ?? "Unknown Client", // Resolve client name or fallback
+                    ClientNumber = context.Users
+                              .Where(client => client.Id == b.ClientId)
+                               .Select(client => client.PhoneNumber).FirstOrDefault() ?? "null",// Resolve client name or fallback
+                    PickupAddress = b.PickupAddress,
+                    DeliveryAddress = b.DeliveryAddress,
+
                     DeliveryDate = b.DeliveryDate,
                     Weight = b.Weight,
                     TotalPrice = b.TotalPrice,
