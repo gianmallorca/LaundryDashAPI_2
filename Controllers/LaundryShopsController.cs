@@ -94,7 +94,7 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<IActionResult> GetImageById(Guid id)
         {
             // Define the folder path where images are stored (without the "LaundryShopImages" folder part)
-            var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash New API";
+            var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash New API\LaundryShopImages";
 
             // Check if the folder exists
             if (!Directory.Exists(folderPath))
