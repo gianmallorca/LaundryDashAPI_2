@@ -267,5 +267,60 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(userType);
         }
 
+        //update user details
+        [HttpPut("UpdateUserDetails/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        public async Task<ActionResult> UpdateUserDetails(Guid id, [FromBody] ApplicationUser adminUserCredentials)
+        {
+            // Find the existing user by ID
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Update common user details
+            user.FirstName = adminUserCredentials.FirstName;
+            user.LastName = adminUserCredentials.LastName;
+            user.UserName = adminUserCredentials.Email;
+            user.Email = adminUserCredentials.Email;
+            user.Birthday = adminUserCredentials.Birthday;
+            user.Age = adminUserCredentials.Age;
+            user.Gender = adminUserCredentials.Gender;
+            user.City = adminUserCredentials.City;
+            user.Barangay = adminUserCredentials.Barangay;
+            user.BrgyStreet = adminUserCredentials.BrgyStreet;
+            user.PhoneNumber = adminUserCredentials.PhoneNumber;
+
+            // Update specific properties based on user type
+            if (adminUserCredentials.UserType == "LaundryShopAccount")
+            {
+                user.TaxIdentificationNumber = adminUserCredentials.TaxIdentificationNumber;
+                user.BusinessPermitNumber = adminUserCredentials.BusinessPermitNumber;
+            }
+            else if (adminUserCredentials.UserType == "RiderAccount")
+            {
+                user.VehicleType = adminUserCredentials.VehicleType;
+                user.VehicleCapacity = adminUserCredentials.VehicleCapacity;
+                user.DriversLicenseNumber = adminUserCredentials.DriversLicenseNumber;
+            }
+
+            // Update approval status and user type
+         
+
+            // Save changes to the user
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors); // Return update errors if any
+            }
+
+            // Return a success status code (No Content)
+            return NoContent(); // Indicating that the update was successful with no response body
+        }
+
+
+
+
     }
 }
