@@ -315,21 +315,21 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        [HttpPut("{id:Guid}", Name = "editLaundryShop")]
+        //[HttpPut("{id:Guid}", Name = "editLaundryShop")]
 
-        public async Task<ActionResult> Put(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
-        {
-            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
-            if (laundryShop == null)
-            {
-                return NotFound();
-            }
+        //public async Task<ActionResult> EditLaund(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
+        //{
+        //    var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+        //    if (laundryShop == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            laundryShop = mapper.Map(laundryShopCreationDTO, laundryShop);
-            await context.SaveChangesAsync();
+        //    laundryShop = mapper.Map(laundryShopCreationDTO, laundryShop);
+        //    await context.SaveChangesAsync();
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
 
         [HttpDelete("{id:Guid}", Name = "deleteLaundryShop")]
 
