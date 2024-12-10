@@ -240,6 +240,27 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+        //edit shop
+        [HttpPut("{id:Guid}")]
+        public async Task<ActionResult> Put(Guid id, [FromForm] LaundryShopCreationDTO laundryShopCreationDTO)
+        {
+            var model = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
+
+            if (model == null)
+            {
+                return NotFound();
+            }
+
+            model = mapper.Map(laundryShopCreationDTO, model);
+
+            if (laundryShopCreationDTO.LaundryShopPicture != null)
+            {
+                model.LaundryShopPicture = await fileStorageService.EditFile(containerName, laundryShopCreationDTO.LaundryShopPicture, model.LaundryShopPicture);
+            }
+
+            await context.SaveChangesAsync();
+            return NoContent();
+        }
 
 
         [HttpGet("getPendingLaundryShops")]
