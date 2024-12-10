@@ -188,7 +188,7 @@ namespace LaundryDashAPI_2.Controllers
         //dislay user profile
         [HttpGet("GetUserProfile")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
-        public async Task<ActionResult<ApplicationUserDTO>> GetUserProfile()
+        public async Task<ActionResult<UserTypeDTO>> GetUserProfile()
         {
             // Get the email claim from the current user
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
@@ -216,9 +216,9 @@ namespace LaundryDashAPI_2.Controllers
                             .Select(x => x.UserType).FirstOrDefault(),
                     Email = u.Email,
                     UserAddress = context.Users.Where(x => x.Id == user.Id)
-                            .Select(x => $"{x.BrgyStreet},{x.Barangay}, {x.City}").FirstOrDefault()
+                            .Select(x => $"{x.BrgyStreet}, {x.Barangay}, {x.City}").FirstOrDefault()
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
             if (userProfile == null)
             {
@@ -226,6 +226,45 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             return Ok(userProfile);
+        }
+
+        [HttpGet("GetUserType")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        public async Task<ActionResult<UserTypeDTO>> GetUserType()
+        {
+            // Step 1: Get the email claim from the current user
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Step 2: Fetch the logged-in user
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Step 3: Retrieve the user type
+            var userType = await context.Users
+                .Where(u => u.Id == user.Id)
+                .Select(u => new UserTypeDTO
+                {
+                    UserType = u.UserType,
+                    Email = u.Email,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName
+                })
+                .FirstOrDefaultAsync();
+
+            if (userType == null)
+            {
+                return NotFound("User type not found.");
+            }
+
+            return Ok(userType);
         }
 
     }
