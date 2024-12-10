@@ -198,7 +198,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        
+
 
         [HttpPost]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
@@ -226,7 +226,7 @@ namespace LaundryDashAPI_2.Controllers
 
             laundryShop.AddedById = user.Id;
 
-          
+
             if (laundryShopCreationDTO.LaundryShopPicture != null)
             {
                 laundryShop.LaundryShopPicture = await fileStorageService.SaveFile(containerName, laundryShopCreationDTO.LaundryShopPicture);
@@ -427,6 +427,77 @@ namespace LaundryDashAPI_2.Controllers
             return Ok(mapper.Map<LaundryShopDTO>(laundryShop));
         }
 
+
+        //test if working, get weekly sales laundry shop dashboard
+        [HttpGet("weekly-sales")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<Dictionary<string, decimal>>> GetWeeklySales()
+        {
+            // Initialize a dictionary to hold the total sales for each day of the week
+            var salesByDay = new Dictionary<string, decimal>
+            {
+                { "Mon", 0m },
+                { "Tue", 0m },
+                { "Wed", 0m },
+                { "Thu", 0m },
+                { "Fri", 0m },
+                { "Sat", 0m },
+                { "Sun", 0m }
+            };
+
+            // Get all bookings in the current week (you can adjust the query to your needs)
+            var startOfWeek = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+            var endOfWeek = startOfWeek.AddDays(7);
+
+            var bookings = await context.BookingLogs
+                .Where(b => b.BookingDate >= startOfWeek && b.BookingDate < endOfWeek)
+                .ToListAsync();
+
+            // Iterate through each booking and add the total price to the corresponding day of the week
+            foreach (var booking in bookings)
+            {
+                var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // Get the first 3 letters (Mon, Tue, etc.)
+                if (salesByDay.ContainsKey(dayOfWeek))
+                {
+                    salesByDay[dayOfWeek] += booking.TotalPrice ?? 0; // Accumulate total sales for that day
+                }
+            }
+
+            return Ok(salesByDay);
+        }
+
+        //get total revenue
+        [HttpGet("GetTotalRevenue")]
+        public async Task<ActionResult<object>> GetTotalRevenue()
+        {
+            // Get the current date and the first date of this month and the last month
+            var currentDate = DateTime.Now;
+            var firstDayOfCurrentMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+            var firstDayOfLastMonth = firstDayOfCurrentMonth.AddMonths(-1);
+
+            // Get the total revenue for the current month
+            var totalRevenueCurrentMonth = await context.BookingLogs
+                .Where(b => b.BookingDate >= firstDayOfCurrentMonth)
+                .SumAsync(b => b.TotalPrice) ?? 0;
+
+            // Get the total revenue for the last month
+            var totalRevenueLastMonth = await context.BookingLogs
+                .Where(b => b.BookingDate >= firstDayOfLastMonth && b.BookingDate < firstDayOfCurrentMonth)
+                .SumAsync(b => b.TotalPrice) ?? 0;
+
+            // Calculate the percentage increase from last month to this month
+            decimal percentageChange = 0;
+            if (totalRevenueLastMonth > 0)
+            {
+                percentageChange = ((totalRevenueCurrentMonth - totalRevenueLastMonth) / totalRevenueLastMonth) * 100;
+            }
+
+            return Ok(new
+            {
+                TotalRevenue = totalRevenueCurrentMonth,
+                PercentageChange = percentageChange
+            });
+        }
 
 
     }
