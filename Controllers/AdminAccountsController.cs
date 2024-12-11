@@ -210,6 +210,7 @@ namespace LaundryDashAPI_2.Controllers
                 .Where(u => u.Email == email)
                 .Select(u => new ApplicationUserCredentials
                 {
+                    Id = u.Id,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
                     UserType = context.Users.Where(x => x.Id == user.Id)
