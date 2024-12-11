@@ -257,7 +257,7 @@ namespace LaundryDashAPI_2.Controllers
             {
                 LaundryShopId = laundryShop.LaundryShopId,
                 LaundryShopName = laundryShop.LaundryShopName,
-               
+
                 City = laundryShop.City,
                 Barangay = laundryShop.Barangay,
                 BrgyStreet = laundryShop.BrgyStreet,
@@ -271,7 +271,7 @@ namespace LaundryDashAPI_2.Controllers
                 Friday = laundryShop.Friday,
                 Saturday = laundryShop.Saturday,
                 Sunday = laundryShop.Sunday,
-              
+
                 BusinessPermitId = laundryShop.BusinessPermitId,
                 DTIPermitId = laundryShop.DTIPermitId,
                 TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
@@ -472,12 +472,34 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //test if working, get weekly sales laundry shop dashboard
-        [HttpGet("weekly-sales")]
+        [HttpGet("weekly-sales-by-shop")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<Dictionary<string, decimal>>> GetWeeklySales()
+        public async Task<ActionResult<Dictionary<string, Dictionary<string, decimal>>>> GetWeeklySalesByShop()
         {
-            // Initialize a dictionary to hold the total sales for each day of the week
-            var salesByDay = new Dictionary<string, decimal>
+            // Initialize a dictionary to hold sales grouped by laundry shop and day of the week
+            var salesByShop = new Dictionary<string, Dictionary<string, decimal>>();
+
+            // Calculate the start and end of the current week
+            var startOfWeek = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1); // Start on Monday
+            var endOfWeek = startOfWeek.AddDays(7); // End on Sunday
+
+            // Get all bookings in the current week
+            var bookings = await context.BookingLogs
+                .Include(b => b.LaundryServiceLog.LaundryShop) // Include related laundry shop
+                .Where(b => b.BookingDate >= startOfWeek && b.BookingDate < endOfWeek)
+                .ToListAsync();
+
+            // Iterate through each booking to group sales
+            foreach (var booking in bookings)
+            {
+                var shopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName;
+                var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // Get the first 3 letters (Mon, Tue, etc.)
+                var totalPrice = booking.TotalPrice ?? 0; // Handle null values for total price
+
+                // Ensure the shop is in the dictionary
+                if (!salesByShop.ContainsKey(shopName))
+                {
+                    salesByShop[shopName] = new Dictionary<string, decimal>
             {
                 { "Mon", 0m },
                 { "Tue", 0m },
@@ -487,27 +509,18 @@ namespace LaundryDashAPI_2.Controllers
                 { "Sat", 0m },
                 { "Sun", 0m }
             };
+                }
 
-            // Get all bookings in the current week (you can adjust the query to your needs)
-            var startOfWeek = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-            var endOfWeek = startOfWeek.AddDays(7);
-
-            var bookings = await context.BookingLogs
-                .Where(b => b.BookingDate >= startOfWeek && b.BookingDate < endOfWeek)
-                .ToListAsync();
-
-            // Iterate through each booking and add the total price to the corresponding day of the week
-            foreach (var booking in bookings)
-            {
-                var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // Get the first 3 letters (Mon, Tue, etc.)
-                if (salesByDay.ContainsKey(dayOfWeek))
+                // Add the sales to the corresponding day
+                if (salesByShop[shopName].ContainsKey(dayOfWeek))
                 {
-                    salesByDay[dayOfWeek] += booking.TotalPrice ?? 0; // Accumulate total sales for that day
+                    salesByShop[shopName][dayOfWeek] += totalPrice;
                 }
             }
 
-            return Ok(salesByDay);
+            return Ok(salesByShop);
         }
+
 
         //get total revenue
         [HttpGet("GetTotalRevenue")]
