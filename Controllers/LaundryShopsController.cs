@@ -241,7 +241,7 @@ namespace LaundryDashAPI_2.Controllers
 
         //get to populate component
         [HttpGet("getLaundryShopDetailsForEditById/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<LaundryShopDTO>> getLaundryShopDetailsForEditById([FromRoute] Guid id)
         {
             // Retrieve the laundry shop by ID
@@ -276,7 +276,8 @@ namespace LaundryDashAPI_2.Controllers
                 DTIPermitId = laundryShop.DTIPermitId,
                 TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
                 EnvironmentalPermit = laundryShop.EnvironmentalPermit,
-                SanitaryPermit = laundryShop.SanitaryPermit
+                SanitaryPermit = laundryShop.SanitaryPermit,
+                LaundryShopPicture = laundryShop.LaundryShopPicture
             };
 
             return Ok(shopDetails);
