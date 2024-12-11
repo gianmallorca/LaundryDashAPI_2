@@ -184,6 +184,50 @@ namespace LaundryDashAPI_2.Controllers
 
         }
 
+        [HttpGet("getUserDetailsById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        public async Task<ActionResult> GetUserById([FromRoute] Guid id)
+        {
+            // Retrieve the authenticated user's email
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            // Retrieve the user by ID
+            var user = await userManager.Users.FirstOrDefaultAsync(u => u.Id == id.ToString() && u.Email == email);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Map the user to the ApplicationUserCredentials DTO
+            var userDetails = new ApplicationUserCredentials
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Birthday = user.Birthday,
+                Gender = user.Gender,
+                City = user.City,
+                Barangay = user.Barangay,
+                BrgyStreet = user.BrgyStreet,
+                UserType = user.UserType,
+                PhoneNumber = user.PhoneNumber,
+                TaxIdentificationNumber = user.UserType?.ToLower() == "LaundryShopAccount" ? user.TaxIdentificationNumber : null,
+                BusinessPermitNumber = user.UserType?.ToLower() == "LaundryShopAccount" ? user.BusinessPermitNumber : null,
+                VehicleType = user.UserType?.ToLower() == "RiderAccount" ? user.VehicleType : null,
+                VehicleCapacity = user.UserType?.ToLower() == "RiderAccount" ? user.VehicleCapacity : null,
+                DriversLicenseNumber = user.UserType?.ToLower() == "RiderAccount" ? user.DriversLicenseNumber : null
+            };
+
+            // Return the user details
+            return Ok(userDetails);
+        }
+
+
 
         //dislay user profile
         [HttpGet("GetUserProfile")]
