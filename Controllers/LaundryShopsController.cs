@@ -239,9 +239,52 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
+        //get to populate component
+        [HttpGet("getLaundryShopDetailsForEditById/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
+        public async Task<ActionResult<LaundryShopDTO>> getLaundryShopDetailsForEditById([FromRoute] Guid id)
+        {
+            // Retrieve the laundry shop by ID
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(shop => shop.LaundryShopId == id);
+
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry shop not found.");
+            }
+
+            // Map the laundry shop entity to LaundryShopDTO
+            var shopDetails = new LaundryShopDTO
+            {
+                LaundryShopId = laundryShop.LaundryShopId,
+                LaundryShopName = laundryShop.LaundryShopName,
+               
+                City = laundryShop.City,
+                Barangay = laundryShop.Barangay,
+                BrgyStreet = laundryShop.BrgyStreet,
+                ContactNum = laundryShop.ContactNum,
+                TimeOpen = laundryShop.TimeOpen,
+                TimeClose = laundryShop.TimeClose,
+                Monday = laundryShop.Monday,
+                Tuesday = laundryShop.Tuesday,
+                Wednesday = laundryShop.Wednesday,
+                Thursday = laundryShop.Thursday,
+                Friday = laundryShop.Friday,
+                Saturday = laundryShop.Saturday,
+                Sunday = laundryShop.Sunday,
+              
+                BusinessPermitId = laundryShop.BusinessPermitId,
+                DTIPermitId = laundryShop.DTIPermitId,
+                TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
+                EnvironmentalPermit = laundryShop.EnvironmentalPermit,
+                SanitaryPermit = laundryShop.SanitaryPermit
+            };
+
+            return Ok(shopDetails);
+        }
+
 
         //edit shop
-        [HttpPut("{id:Guid}")]
+        [HttpPut("EditShopDetails/{id}")]
         public async Task<ActionResult> Put(Guid id, [FromForm] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             var model = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);

@@ -9,7 +9,7 @@ namespace LaundryDashAPI_2.Entities
         [Required(ErrorMessage = "The field with name {0} is required")]
         [StringLength(120)]
         [FirstLetterUppercase]
-        public string LaundryShopPicture { get;set; }
+        public string? LaundryShopPicture { get;set; }
         public string LaundryShopName { get; set; }
         [Required(ErrorMessage = "This field is required!")]
         public string City { get; set; }
