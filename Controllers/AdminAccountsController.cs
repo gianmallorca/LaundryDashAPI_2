@@ -216,16 +216,28 @@ namespace LaundryDashAPI_2.Controllers
                 BrgyStreet = user.BrgyStreet,
                 UserType = user.UserType,
                 PhoneNumber = user.PhoneNumber,
-                TaxIdentificationNumber = user.UserType?.ToLower() == "LaundryShopAccount" ? user.TaxIdentificationNumber : null,
-                BusinessPermitNumber = user.UserType?.ToLower() == "LaundryShopAccount" ? user.BusinessPermitNumber : null,
-                VehicleType = user.UserType?.ToLower() == "RiderAccount" ? user.VehicleType : null,
-                VehicleCapacity = user.UserType?.ToLower() == "RiderAccount" ? user.VehicleCapacity : null,
-                DriversLicenseNumber = user.UserType?.ToLower() == "RiderAccount" ? user.DriversLicenseNumber : null
-            };
+            }; // Missing semicolon added here
 
-            // Return the user details
+            if (user.UserType == "LaundryShopAccount")
+            {
+                userDetails.TaxIdentificationNumber = user.TaxIdentificationNumber ?? null;
+                userDetails.BusinessPermitNumber = user.BusinessPermitNumber ?? null;
+            }
+
+            if (user.UserType == "RiderAccount")
+            {
+                userDetails.VehicleType = user.VehicleType ?? null;
+                userDetails.VehicleCapacity = user.VehicleCapacity ?? null;
+                userDetails.DriversLicenseNumber = user.DriversLicenseNumber ?? null;
+            }
+
             return Ok(userDetails);
         }
+
+
+        // Return the user details
+
+
 
 
 
@@ -351,7 +363,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Update approval status and user type
-         
+
 
             // Save changes to the user
             var result = await userManager.UpdateAsync(user);
