@@ -527,34 +527,35 @@ namespace LaundryDashAPI_2.Controllers
         [HttpGet("GetTotalRevenue")]
         public async Task<ActionResult<object>> GetTotalRevenue()
         {
-            // Get the current date and the first date of this month and the last month
-            var currentDate = DateTime.Now;
+            // Get the current date and the first date of this month and last month
+            var currentDate = DateTime.UtcNow;
             var firstDayOfCurrentMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
             var firstDayOfLastMonth = firstDayOfCurrentMonth.AddMonths(-1);
 
             // Get the total revenue for the current month
             var totalRevenueCurrentMonth = await context.BookingLogs
                 .Where(b => b.BookingDate >= firstDayOfCurrentMonth)
-                .SumAsync(b => b.TotalPrice) ?? 0;
+                .SumAsync(b => (decimal?)b.TotalPrice) ?? 0m; // Default to 0m if null or no data
 
             // Get the total revenue for the last month
             var totalRevenueLastMonth = await context.BookingLogs
                 .Where(b => b.BookingDate >= firstDayOfLastMonth && b.BookingDate < firstDayOfCurrentMonth)
-                .SumAsync(b => b.TotalPrice) ?? 0;
+                .SumAsync(b => (decimal?)b.TotalPrice) ?? 0m; // Default to 0m if null or no data
 
             // Calculate the percentage increase from last month to this month
-            decimal percentageChange = 0;
-            if (totalRevenueLastMonth > 0)
+            decimal percentageChange = 0m; // Default to 0
+            if (totalRevenueLastMonth > 0m)
             {
-                percentageChange = ((totalRevenueCurrentMonth - totalRevenueLastMonth) / totalRevenueLastMonth) * 100;
+                percentageChange = (totalRevenueCurrentMonth - totalRevenueLastMonth) / totalRevenueLastMonth * 100m;
             }
 
             return Ok(new
             {
-                TotalRevenue = totalRevenueCurrentMonth,
-                PercentageChange = percentageChange
+                CurrentMonthRevenue = totalRevenueCurrentMonth,
+                RevenueChangePercentage = Math.Round(percentageChange, 2) // Rounded to two decimal places
             });
         }
+
 
 
     }
