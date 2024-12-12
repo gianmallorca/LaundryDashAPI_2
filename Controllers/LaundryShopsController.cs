@@ -94,7 +94,7 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<IActionResult> GetImageById(Guid id)
         {
             // Define the folder path where images are stored (without the "LaundryShopImages" folder part)
-            var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash New API\LaundryShopImages";
+            var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash API New\LaundryShopImages";
 
             // Check if the folder exists
             if (!Directory.Exists(folderPath))
@@ -505,15 +505,15 @@ namespace LaundryDashAPI_2.Controllers
                     {
                         shopId = shopId, // Add the shopId
                         sales = new Dictionary<string, decimal>
-                        {
-                            { "Mon", 0m },
-                            { "Tue", 0m },
-                            { "Wed", 0m },
-                            { "Thu", 0m },
-                            { "Fri", 0m },
-                            { "Sat", 0m },
-                            { "Sun", 0m }
-                        }
+        {
+            { "Mon", 0m },
+            { "Tue", 0m },
+            { "Wed", 0m },
+            { "Thu", 0m },
+            { "Fri", 0m },
+            { "Sat", 0m },
+            { "Sun", 0m }
+        }
                     };
                 }
 

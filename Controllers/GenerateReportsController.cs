@@ -31,7 +31,7 @@ namespace LaundryDashAPI_2.Controllers
 
         [HttpGet("GenerateDailySales/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<List<DailySalesReportDTO>>> GetDailySalesReportAsync(Guid id, DateTime startDate, DateTime endDate)
+        public async Task<ActionResult<List<DailySalesReportDTO>>> GetDailySalesReportAsync(Guid id)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -47,28 +47,47 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Step 3: Query to fetch the daily sales report
+            // Step 3: Set today's date as startDate and endDate
+            var currentDate = DateTime.Now.Date; // Get the current date at midnight (removes time component)
+
+            // Step 4: Query to fetch today's sales report
             var salesReport = await context.BookingLogs
-                .Where(b => b.BookingDate >= startDate && b.BookingDate <= endDate
-                        && !b.IsCanceled
-                        && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by date and non-canceled bookings
-                .GroupBy(b => new { b.BookingDate, b.LaundryServiceLog.Service.ServiceName }) // Group by BookingDate and ServiceName
+                .Where(b => b.BookingDate >= currentDate
+                            && b.BookingDate < currentDate.AddDays(1) // Ensures it includes all bookings for today
+                            && !b.IsCanceled
+                            && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by laundry shop ID
+                .Select(b => new
+                {
+                    b.BookingDate,
+                    b.LaundryServiceLog.ServiceIds,
+                    b.TotalPrice
+                })
+                .ToListAsync(); // Fetch all necessary data
+
+            // Step 5: Map service names and aggregate sales data
+            var salesReportDTO = salesReport
+                .GroupBy(b => new {
+                    ServiceName = context.Services
+                        .Where(service => b.ServiceIds != null && service.ServiceId == b.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service" // Resolve service name or fallback
+                })
                 .Select(g => new DailySalesReportDTO
                 {
-                    BookingDate = g.Key.BookingDate.Date, // Ensure it's just the date part
                     ServiceName = g.Key.ServiceName,
+                    BookingDate = g.Min(b => b.BookingDate).Date, // Ensure it's just the date part
                     NumberOfOrders = g.Count(), // Count the orders in each group
                     AverageOrderValue = g.Average(b => b.TotalPrice ?? 0), // Average price of orders in the group
                     TotalSalesAmount = g.Sum(b => b.TotalPrice ?? 0) // Total sales for the service
                 })
-                .ToListAsync(); // Fetch the entire list
+                .ToList();
 
-            if (salesReport == null || !salesReport.Any())
+            if (salesReportDTO == null || !salesReportDTO.Any())
             {
-                return NotFound("No sales data found for the specified date range.");
+                return NotFound("No sales data found for today.");
             }
 
-            return Ok(salesReport);
+            return Ok(salesReportDTO);
         }
 
         [HttpGet("GenerateWeeklySales/{id}")]
