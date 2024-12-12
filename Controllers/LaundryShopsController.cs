@@ -475,56 +475,71 @@ namespace LaundryDashAPI_2.Controllers
         //test if working, get weekly sales laundry shop dashboard
         [HttpGet("weekly-sales-by-shop")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<ActionResult<Dictionary<string, Dictionary<string, decimal>>>> GetWeeklySalesByShop()
+        public async Task<ActionResult<List<object>>> GetWeeklySalesByShop()
         {
-            // Initialize a dictionary to hold sales grouped by laundry shop and day of the week
-            var salesByShop = new Dictionary<string, Dictionary<string, decimal>>();
-
             // Calculate the start and end of the current week
             var startOfWeek = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1); // Start on Monday
             var endOfWeek = startOfWeek.AddDays(7); // End on Sunday
 
-            // Get all bookings in the current week
+            // Get all bookings in the current week, including related data
             var bookings = await context.BookingLogs
-                .Include(b => b.LaundryServiceLog.LaundryShop) // Include related laundry shop
+                .Include(b => b.LaundryServiceLog.LaundryShop) // Include LaundryShop
                 .Where(b => b.BookingDate >= startOfWeek && b.BookingDate < endOfWeek)
                 .ToListAsync();
 
-            // Iterate through each booking to group sales
-            foreach (var booking in bookings)
-            {
-                var shopName = booking.LaundryServiceLog.LaundryShop.LaundryShopName;
-                var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // Get the first 3 letters (Mon, Tue, etc.)
-                var totalPrice = booking.TotalPrice ?? 0; // Handle null values for total price
+            // Initialize a list to hold the result
+            var salesByShop = new List<object>();
 
-                // Ensure the shop is in the dictionary
-                if (!salesByShop.ContainsKey(shopName))
-                {
-                    salesByShop[shopName] = new Dictionary<string, decimal>
+            // Group bookings by laundry shop
+            var bookingsGroupedByShop = bookings.GroupBy(b => new
             {
-                { "Mon", 0m },
-                { "Tue", 0m },
-                { "Wed", 0m },
-                { "Thu", 0m },
-                { "Fri", 0m },
-                { "Sat", 0m },
-                { "Sun", 0m }
-            };
+                ShopId = b.LaundryServiceLog.LaundryShop.LaundryShopId,
+                ShopName = b.LaundryServiceLog.LaundryShop.LaundryShopName
+            });
+
+            // Process each group
+            foreach (var group in bookingsGroupedByShop)
+            {
+                var weeklySales = new Dictionary<string, decimal>
+        {
+            { "Mon", 0m },
+            { "Tue", 0m },
+            { "Wed", 0m },
+            { "Thu", 0m },
+            { "Fri", 0m },
+            { "Sat", 0m },
+            { "Sun", 0m }
+        };
+
+                foreach (var booking in group)
+                {
+                    var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // First 3 letters (Mon, Tue, etc.)
+                    var totalPrice = booking.TotalPrice ?? 0m; // Handle null TotalPrice values
+
+                    // Add sales to the corresponding day
+                    if (weeklySales.ContainsKey(dayOfWeek))
+                    {
+                        weeklySales[dayOfWeek] += totalPrice;
+                    }
                 }
 
-                // Add the sales to the corresponding day
-                if (salesByShop[shopName].ContainsKey(dayOfWeek))
+                // Add shop ID, shop name, and weekly sales to the result
+                salesByShop.Add(new
                 {
-                    salesByShop[shopName][dayOfWeek] += totalPrice;
-                }
+                    ShopId = group.Key.ShopId,
+                    ShopName = group.Key.ShopName,
+                    WeeklySales = weeklySales
+                });
             }
 
             return Ok(salesByShop);
         }
 
 
+
         //get total revenue
         [HttpGet("GetTotalRevenue")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<object>> GetTotalRevenue()
         {
             // Get the current date and the first date of this month and last month
@@ -555,6 +570,76 @@ namespace LaundryDashAPI_2.Controllers
                 RevenueChangePercentage = Math.Round(percentageChange, 2) // Rounded to two decimal places
             });
         }
+
+
+        [HttpGet("GetActiveUsers")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<object>> GetActiveUsers()
+        {
+            // Define the start of the current and last month
+            var currentDate = DateTime.UtcNow;
+            var firstDayOfCurrentMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+            var firstDayOfLastMonth = firstDayOfCurrentMonth.AddMonths(-1);
+
+            // Count completed bookings for the current month
+            var completedBookingsCurrentMonth = await context.BookingLogs
+                .Where(b => b.TransactionCompleted && b.BookingDate >= firstDayOfCurrentMonth)
+                .CountAsync();
+
+            // Count completed bookings for the last month
+            var completedBookingsLastMonth = await context.BookingLogs
+                .Where(b => b.TransactionCompleted && b.BookingDate >= firstDayOfLastMonth && b.BookingDate < firstDayOfCurrentMonth)
+                .CountAsync();
+
+            // Calculate the percentage change
+            decimal percentageChange = 0;
+            if (completedBookingsLastMonth > 0)
+            {
+                percentageChange = ((decimal)(completedBookingsCurrentMonth - completedBookingsLastMonth) / completedBookingsLastMonth) * 100;
+            }
+
+            return Ok(new
+            {
+                CompletedBookings = completedBookingsCurrentMonth,
+                PercentageChange = Math.Round(percentageChange, 1) // Rounded to one decimal place
+            });
+        }
+
+
+        [HttpGet("GetGrowthPercentage")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<object>> GetGrowthPercentage()
+        {
+            // Example: Replace this with your specific data source and logic
+            var currentDate = DateTime.UtcNow;
+            var firstDayOfCurrentMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+            var firstDayOfLastMonth = firstDayOfCurrentMonth.AddMonths(-1);
+
+            // Replace with your actual logic for growth calculation
+            var metricCurrentMonth = await context.BookingLogs
+                .Where(b => b.BookingDate >= firstDayOfCurrentMonth)
+                .CountAsync();
+
+            var metricLastMonth = await context.BookingLogs
+                .Where(b => b.BookingDate >= firstDayOfLastMonth && b.BookingDate < firstDayOfCurrentMonth)
+                .CountAsync();
+
+            // Calculate percentage growth
+            decimal growthPercentage = 0;
+            if (metricLastMonth > 0)
+            {
+                growthPercentage = ((decimal)(metricCurrentMonth - metricLastMonth) / metricLastMonth) * 100;
+            }
+
+            return Ok(new
+            {
+                Growth = Math.Round(growthPercentage, 1),
+                MetricCurrentMonth = metricCurrentMonth,
+                MetricLastMonth = metricLastMonth
+            });
+        }
+
+
 
 
 
