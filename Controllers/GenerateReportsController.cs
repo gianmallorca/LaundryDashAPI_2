@@ -680,7 +680,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //rider dashboard
-        [HttpGet("weekly-bookings-by-rider")]
+        [HttpGet("WeeklyBookingsByRider")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<Dictionary<string, object>>> GetWeeklyBookingsByRider()
         {
