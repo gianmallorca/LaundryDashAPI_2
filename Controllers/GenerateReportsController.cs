@@ -360,6 +360,9 @@ namespace LaundryDashAPI_2.Controllers
                 })
                 .ToList();
 
+            // Calculate total revenue
+            var totalRevenue = salesReportDTO.Sum(item => item.TotalSalesAmount);
+
             // Add data rows to the PDF
             foreach (var item in salesReportDTO)
             {
@@ -378,6 +381,11 @@ namespace LaundryDashAPI_2.Controllers
                 currentY += 15; // Adjusted row height
             }
 
+            // Add space before Total Revenue
+            currentY += 20;
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, 400, currentY);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, 530, currentY);
+
             // Save and return PDF
             using (var ms = new MemoryStream())
             {
@@ -386,6 +394,7 @@ namespace LaundryDashAPI_2.Controllers
                 return File(ms.ToArray(), "application/pdf", "DailySalesReport.pdf");
             }
         }
+
 
 
 
