@@ -66,7 +66,8 @@ namespace LaundryDashAPI_2.Controllers
 
             // Step 5: Map service names and aggregate sales data
             var salesReportDTO = salesReport
-                .GroupBy(b => new {
+                .GroupBy(b => new
+                {
                     ServiceName = context.Services
                         .Where(service => b.ServiceIds != null && service.ServiceId == b.ServiceIds.FirstOrDefault())
                         .Select(service => service.ServiceName)
@@ -135,27 +136,26 @@ namespace LaundryDashAPI_2.Controllers
 
                 // Step 4: Map service names and aggregate weekly sales data
                 var salesReportDTO = bookings
-                    .SelectMany(b => b.ServiceIds?.Select(serviceId => new
-                    {
-                        ServiceName = context.Services
-                            .Where(service => service.ServiceId == serviceId)
-                            .Select(service => service.ServiceName)
-                            .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
-                        b.BookingDate,
-                        b.TotalPrice
-                    }) ?? Enumerable.Empty<dynamic>())
-                    .GroupBy(entry => entry.ServiceName) // Group by service name
-                    .Select(g => new WeeklySalesReportDTO
-                    {
-                        ServiceName = g.Key,
-                        WeekStartDate = startOfWeek,
-                        WeekEndDate = endOfWeek,
-                        NumberOfOrders = g.Count(), // Count the orders for the service
-                        AverageOrderValue = Convert.ToDecimal(g.Average(entry => (entry.TotalPrice ?? 0)))
-, // Average price of orders
-                        TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales for the service
-                    })
-                    .ToList();
+                .SelectMany(b => b.ServiceIds?.Select(serviceId => new
+                {
+                    ServiceName = context.Services
+                        .Where(service => service.ServiceId == serviceId)
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    b.BookingDate,
+                    b.TotalPrice
+                }) ?? Enumerable.Empty<dynamic>())
+                .GroupBy(entry => entry.ServiceName) // Group by service name
+                .Select(g => new WeeklySalesReportDTO
+                {
+                    ServiceName = g.Key,
+                    WeekStartDate = startOfWeek,
+                    WeekEndDate = endOfWeek,
+                    NumberOfOrders = g.Count(), // Count is an integer, no cast needed here
+                    AverageOrderValue = Convert.ToDecimal(g.Average(entry => (entry.TotalPrice ?? 0))), // Cast the result of Average to decimal
+                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales for the service
+                })
+                .ToList();
 
                 if (salesReportDTO == null || !salesReportDTO.Any())
                 {
@@ -178,7 +178,7 @@ namespace LaundryDashAPI_2.Controllers
         // Helper method to calculate the start date of the week (you may adjust the start day of the week if needed)
         [ApiExplorerSettings(IgnoreApi = true)]
         private DateTime StartOfWeek(DateTime date)
-        {   
+        {
             var dayOfWeek = (int)date.DayOfWeek;
             var difference = dayOfWeek - (int)DayOfWeek.Monday; // Adjust to Monday as the start of the week
             return date.AddDays(-difference).Date;
