@@ -681,7 +681,7 @@ namespace LaundryDashAPI_2.Controllers
 
         //rider dashboard
         [HttpGet("weekly-bookings-by-rider")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsRiderAccount")]
         public async Task<ActionResult<Dictionary<string, object>>> GetWeeklyBookingsByRider()
         {
             // Initialize a dictionary to hold the bookings grouped by rider and day of the week
