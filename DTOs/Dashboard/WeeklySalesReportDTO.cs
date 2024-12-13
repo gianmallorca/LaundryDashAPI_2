@@ -8,5 +8,6 @@
         public int NumberOfOrders { get; set; } // Count should be an integer
         public double AverageOrderValue { get; set; } // Average as double
         public double TotalSalesAmount { get; set; } // Total sales amount as double
+        public double TotalRevenue { get; set; }
     }
 }

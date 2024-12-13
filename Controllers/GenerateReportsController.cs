@@ -162,7 +162,8 @@ namespace LaundryDashAPI_2.Controllers
                         WeekEndDate = endOfWeek,
                         NumberOfOrders = g.Count(),
                         AverageOrderValue = g.Average(entry => entry.TotalPrice.HasValue ? (double)entry.TotalPrice : 0),
-                        TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0)
+                        TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0),
+                        TotalRevenue = (double)bookings.Sum(b => b.TotalPrice ?? 0) // Sum for all bookings to get total revenue
                     })
                     .ToList();
 
@@ -180,6 +181,7 @@ namespace LaundryDashAPI_2.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
+
 
 
         [HttpGet("GenerateMonthlySales/{id}")]
@@ -248,7 +250,8 @@ namespace LaundryDashAPI_2.Controllers
                         WeekEndDate = endOfWeek,
                         NumberOfOrders = g.Count(),
                         AverageOrderValue = g.Average(entry => entry.TotalPrice.HasValue ? (double)entry.TotalPrice : 0),
-                        TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0)
+                        TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0),
+                        TotalRevenue = (double)bookings.Sum(b => b.TotalPrice ?? 0) // Sum for all bookings to get total revenue
                     })
                     .ToList();
 

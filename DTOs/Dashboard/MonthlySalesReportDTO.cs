@@ -7,5 +7,6 @@
         public int NumberOfOrders { get; set; } // Number of orders for that service in the month
         public decimal AverageOrderValue { get; set; } // Average order value for the service
         public decimal TotalSalesAmount { get; set; } // Total sales amount for the service
+        public decimal TotalRevenue { get; set; }
     }
 }
