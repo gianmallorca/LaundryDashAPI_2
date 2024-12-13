@@ -679,6 +679,77 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+        //rider dashboard
+        [HttpGet("weekly-bookings-by-rider")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult<Dictionary<string, object>>> GetWeeklyBookingsByRider()
+        {
+            // Initialize a dictionary to hold the bookings grouped by rider and day of the week
+            var bookingsByRider = new Dictionary<string, object>();
+
+            // Calculate the start and end of the current week
+            var startOfWeek = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1); // Start on Monday
+            var endOfWeek = startOfWeek.AddDays(7); // End on Sunday
+
+            // Get all bookings in the current week
+            var bookings = await context.BookingLogs
+                .Where(b => b.BookingDate >= startOfWeek && b.BookingDate < endOfWeek)
+                .ToListAsync();
+
+            // Iterate through each booking to group by rider and day of the week
+            foreach (var booking in bookings)
+            {
+                // Determine the rider for pickup and delivery
+                var riderId = booking.PickupRiderId ?? booking.DeliveryRiderId; // Use either Pickup or Delivery rider ID
+
+                if (riderId == null) continue; // Skip if no rider is assigned
+
+                // Get the day of the week for the booking
+                var dayOfWeek = booking.BookingDate.DayOfWeek.ToString().Substring(0, 3); // Get the first 3 letters (Mon, Tue, etc.)
+
+                // Ensure the rider is in the dictionary
+                if (!bookingsByRider.ContainsKey(riderId))
+                {
+                    bookingsByRider[riderId] = new
+                    {
+                        riderId = riderId, // Add the riderId
+                        bookings = new Dictionary<string, int>
+                {
+                    { "Mon", 0 },
+                    { "Tue", 0 },
+                    { "Wed", 0 },
+                    { "Thu", 0 },
+                    { "Fri", 0 },
+                    { "Sat", 0 },
+                    { "Sun", 0 }
+                }
+                    };
+                }
+
+                // Count the pickup task for the rider
+                if (booking.PickupRiderId == riderId)
+                {
+                    var riderBookings = (dynamic)bookingsByRider[riderId]; // Cast to dynamic to access riderId and bookings data
+                    if (riderBookings.bookings.ContainsKey(dayOfWeek))
+                    {
+                        riderBookings.bookings[dayOfWeek] += 1; // Increment the count of bookings for the day
+                    }
+                }
+
+                // Count the delivery task for the rider
+                if (booking.DeliveryRiderId == riderId)
+                {
+                    var riderBookings = (dynamic)bookingsByRider[riderId]; // Cast to dynamic to access riderId and bookings data
+                    if (riderBookings.bookings.ContainsKey(dayOfWeek))
+                    {
+                        riderBookings.bookings[dayOfWeek] += 1; // Increment the count of bookings for the day
+                    }
+                }
+            }
+
+            return Ok(bookingsByRider);
+        }
+
 
 
 
