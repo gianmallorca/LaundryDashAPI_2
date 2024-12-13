@@ -606,15 +606,23 @@ namespace LaundryDashAPI_2.Controllers
             gfx.DrawString("Monthly Sales Report", titleFont, XBrushes.Black, titleX, currentY);
             currentY += 30;
 
+            // Date of the report - Centered
+            var dateText = $"For the month of {currentDate.ToString("MMMM yyyy")}";
+            var dateWidth = gfx.MeasureString(dateText, headerFont).Width;
+            var dateX = (page.Width - dateWidth) / 2;
+            gfx.DrawString(dateText, headerFont, XBrushes.Black, dateX, currentY);
+            currentY += 30;
+
             // Table header - Centered
             var tableWidth = 450; // Total width of the table
             var startX = (page.Width - tableWidth) / 2; // Start X position for centering the table
-            var columnOffsets = new[] { 0, 80, 200, 300, 400 }; // Offsets for each column within the table
+            var columnWidth = tableWidth / 4; // Width for each column, assuming 4 columns
 
-            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[0], currentY);
-            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY);
-            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
-            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            // Draw column headers and center text
+            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnWidth / 2 - gfx.MeasureString("Service", headerFont).Width / 2, currentY);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnWidth + columnWidth / 2 - gfx.MeasureString("Orders", headerFont).Width / 2, currentY);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + 2 * columnWidth + columnWidth / 2 - gfx.MeasureString("Avg Order Value", headerFont).Width / 2, currentY);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + 3 * columnWidth + columnWidth / 2 - gfx.MeasureString("Total Sales", headerFont).Width / 2, currentY);
             currentY += 20;
 
             // Aggregate sales data for the current month
@@ -648,17 +656,18 @@ namespace LaundryDashAPI_2.Controllers
                     currentY = margin; // Reset currentY for the new page
                 }
 
-                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[0], currentY);
-                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[1], currentY);
-                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[2], currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY);
+                // Center data in columns
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnWidth / 2 - gfx.MeasureString(item.ServiceName, font).Width / 2, currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnWidth + columnWidth / 2 - gfx.MeasureString(item.NumberOfOrders.ToString(), font).Width / 2, currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + 2 * columnWidth + columnWidth / 2 - gfx.MeasureString(item.AverageOrderValue.ToString("C"), font).Width / 2, currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + 3 * columnWidth + columnWidth / 2 - gfx.MeasureString(item.TotalSalesAmount.ToString("C"), font).Width / 2, currentY);
                 currentY += 15; // Adjusted row height
             }
 
             // Add space before Total Revenue
             currentY += 20;
-            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
-            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + 2 * columnWidth + columnWidth / 2 - gfx.MeasureString("Total Revenue", headerFont).Width / 2, currentY);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + 3 * columnWidth + columnWidth / 2 - gfx.MeasureString(totalRevenue.ToString("C"), headerFont).Width / 2, currentY);
 
             // Save and return PDF
             using (var ms = new MemoryStream())
@@ -668,6 +677,7 @@ namespace LaundryDashAPI_2.Controllers
                 return File(ms.ToArray(), "application/pdf", "MonthlySalesReport.pdf");
             }
         }
+
 
 
 
