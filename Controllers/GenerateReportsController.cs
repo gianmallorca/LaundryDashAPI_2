@@ -296,10 +296,10 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            // Step 2: Set today's date as startDate and endDate
-            var currentDate = DateTime.Now.Date; // Get the current date at midnight (removes time component)
+            // Today's date
+            var currentDate = DateTime.Now.Date;
 
-            // Step 3: Query to fetch today's sales report
+            // Fetch sales report
             var salesReport = await context.BookingLogs
                 .Where(b => b.BookingDate >= currentDate
                             && b.BookingDate < currentDate.AddDays(1)
@@ -318,31 +318,31 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("No sales data found for today.");
             }
 
-            // Step 4: Create a PDF document
+            // Create a PDF document
             var document = new PdfDocument();
             var page = document.AddPage();
             var gfx = XGraphics.FromPdfPage(page);
 
-            // Step 5: Set up font and layout for the report
-            var font = new XFont("Arial", 10); // Reduced font size
-            var titleFont = new XFont("Arial", 14, XFontStyle.Bold); // Title font size adjusted
-            var headerFont = new XFont("Arial", 10, XFontStyle.Bold); // Header font size adjusted
-            var currentY = 40;
+            // Set up font and layout
+            var font = new XFont("Arial", 8); // Smaller font size for better fit
+            var titleFont = new XFont("Arial", 12, XFontStyle.Bold);
+            var headerFont = new XFont("Arial", 9, XFontStyle.Bold);
+            var margin = 20; // Left and right margins
+            var currentY = margin;
 
             // Title of the report
-            gfx.DrawString("Daily Sales Report", titleFont, XBrushes.Black, new XRect(0, currentY, page.Width, page.Height), XStringFormats.TopCenter);
-            currentY += 40;
-
-            // Table header
-            gfx.DrawString("Date", headerFont, XBrushes.Black, 40, currentY);
-            gfx.DrawString("Service", headerFont, XBrushes.Black, 150, currentY);
-            gfx.DrawString("Number of Orders", headerFont, XBrushes.Black, 270, currentY); // Adjusted column spacing
-            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, 400, currentY); // Adjusted column spacing
-            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, 530, currentY); // Adjusted column spacing
-            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, 670, currentY); // Adjusted column spacing
+            gfx.DrawString("Daily Sales Report", titleFont, XBrushes.Black, new XRect(margin, currentY, page.Width - 2 * margin, page.Height), XStringFormats.TopCenter);
             currentY += 30;
 
-            // Step 6: Aggregate and write the data to PDF
+            // Table header
+            gfx.DrawString("Date", headerFont, XBrushes.Black, margin, currentY);
+            gfx.DrawString("Service", headerFont, XBrushes.Black, margin + 80, currentY);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, margin + 200, currentY);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, margin + 300, currentY);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, margin + 400, currentY);
+            currentY += 20;
+
+            // Aggregate sales data
             var salesReportDTO = salesReport
                 .GroupBy(b => new
                 {
@@ -360,28 +360,33 @@ namespace LaundryDashAPI_2.Controllers
                 })
                 .ToList();
 
-            // Add data to the PDF
+            // Add data rows to the PDF
             foreach (var item in salesReportDTO)
             {
-                gfx.DrawString(currentDate.ToString("MM/dd/yyyy"), font, XBrushes.Black, 40, currentY);
-                gfx.DrawString(item.ServiceName, font, XBrushes.Black, 150, currentY);
-                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, 270, currentY);
-                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, 400, currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 530, currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 670, currentY); // Total Revenue same as Total Sales Amount
-                currentY += 18; // Reduced row height to fit more rows
+                if (currentY > page.Height - margin * 2) // Check for page overflow
+                {
+                    page = document.AddPage(); // Add new page
+                    gfx = XGraphics.FromPdfPage(page);
+                    currentY = margin; // Reset currentY for the new page
+                }
+
+                gfx.DrawString(currentDate.ToString("MM/dd/yyyy"), font, XBrushes.Black, margin, currentY);
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, margin + 80, currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, margin + 200, currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, margin + 300, currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, margin + 400, currentY);
+                currentY += 15; // Adjusted row height
             }
 
-            // Step 7: Save the PDF to a memory stream
+            // Save and return PDF
             using (var ms = new MemoryStream())
             {
                 document.Save(ms, false);
                 ms.Seek(0, SeekOrigin.Begin);
-
-                // Step 8: Return the PDF as a downloadable file
                 return File(ms.ToArray(), "application/pdf", "DailySalesReport.pdf");
             }
         }
+
 
 
 
