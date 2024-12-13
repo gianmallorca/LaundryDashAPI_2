@@ -113,7 +113,7 @@ namespace LaundryDashAPI_2.Controllers
             var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek); // Start of the week (Sunday)
             var endOfWeek = startOfWeek.AddDays(7); // End of the week (Saturday midnight)
 
-            // Step 3: Fetch bookings and services for the week
+            // Step 3: Fetch bookings and aggregate sales data for the week
             try
             {
                 var bookings = await context.BookingLogs
@@ -124,7 +124,7 @@ namespace LaundryDashAPI_2.Controllers
                     .Select(b => new
                     {
                         b.BookingDate,
-                        b.LaundryServiceLog.ServiceIds,
+                        b.LaundryServiceLog.ServiceIds, // Get related services
                         b.TotalPrice
                     })
                     .ToListAsync(); // Fetch all necessary data
@@ -134,35 +134,27 @@ namespace LaundryDashAPI_2.Controllers
                     return NotFound("No bookings found for the specified week.");
                 }
 
-                // Step 4: Map service names and aggregate weekly sales data
-                var salesReportDTO = bookings
-                .SelectMany(b => b.ServiceIds?.Select(serviceId => new
-                {
-                    ServiceName = context.Services
-                        .Where(service => service.ServiceId == serviceId)
-                        .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
-                    b.BookingDate,
-                    b.TotalPrice
-                }) ?? Enumerable.Empty<dynamic>())
-                .GroupBy(entry => entry.ServiceName) // Group by service name
-                .Select(g => new WeeklySalesReportDTO
-                {
-                    ServiceName = g.Key,
-                    WeekStartDate = startOfWeek,
-                    WeekEndDate = endOfWeek,
-                    NumberOfOrders = g.Count(), // Count remains as an integer
-                    AverageOrderValue = g.Any() ? g.Average(entry => (entry.TotalPrice ?? 0)) : 0, // Average is double
-                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales is double
-                })
-                .ToList();
+                // Step 4: Group bookings by service and aggregate weekly sales data
+                var reports = await (from booking in context.BookingLogs
+                                     where booking.BookingDate >= startOfWeek && booking.BookingDate < endOfWeek
+                                     && booking.LaundryServiceLog.LaundryShop.LaundryShopId == id
+                                     group booking by new { booking.LaundryServiceLog.ServiceIds, booking.BookingDate.Date } into g
+                                     select new WeeklySalesReportDTO
+                                     {
+                                         ServiceName = string.Join(", ", g.Key.ServiceIds), // Aggregate service names (if needed)
+                                         WeekStartDate = startOfWeek,
+                                         WeekEndDate = endOfWeek,
+                                         NumberOfOrders = g.Count(),
+                                         AverageOrderValue = g.Average(entry => entry.TotalPrice.HasValue ? (double)entry.TotalPrice : 0),  // Cast to double explicitly
+                                         TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0)  // Sum total sales as double
+                                     }).ToListAsync();
 
-                if (salesReportDTO == null || !salesReportDTO.Any())
+                if (reports == null || !reports.Any())
                 {
                     return NotFound("No sales data found for this week.");
                 }
 
-                return Ok(salesReportDTO);
+                return Ok(reports);
             }
             catch (Exception ex)
             {
@@ -171,6 +163,8 @@ namespace LaundryDashAPI_2.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
+
+
 
 
 
