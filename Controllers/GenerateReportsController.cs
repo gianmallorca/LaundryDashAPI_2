@@ -152,8 +152,8 @@ namespace LaundryDashAPI_2.Controllers
                     WeekStartDate = startOfWeek,
                     WeekEndDate = endOfWeek,
                     NumberOfOrders = g.Count(), // Count remains as an integer
-                    AverageOrderValue = g.Any() ? g.Average(entry => (entry.TotalPrice ?? 0M)) : 0M, // AverageOrderValue as decimal
-                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0M) // Total sales for the service
+                    AverageOrderValue = g.Any() ? g.Average(entry => (entry.TotalPrice ?? 0)) : 0, // Average is double
+                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales is double
                 })
                 .ToList();
 
@@ -279,9 +279,9 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //download weekly
-        [HttpGet("GenerateWeeklySalesPDF/{id}")]
+        [HttpGet("GenerateWeeklySales/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
-        public async Task<IActionResult> GenerateWeeklySalesReportPDF(Guid id, DateTime startDate, DateTime endDate)
+        public async Task<ActionResult<List<WeeklySalesReportDTO>>> GetWeeklySalesReportPDF(Guid id)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -296,63 +296,72 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("User not found.");
             }
 
-            var salesReport = await context.BookingLogs
-                .Where(b => b.BookingDate >= startDate && b.BookingDate <= endDate
-                        && !b.IsCanceled
-                        && b.LaundryServiceLog.LaundryShop.LaundryShopId == id)
-                .GroupBy(b => new
-                {
-                    WeekStartDate = StartOfWeek(b.BookingDate),
-                    b.LaundryServiceLog.Service.ServiceName
-                })
-                .Select(g => new WeeklySalesReportDTO
-                {
-                    WeekStartDate = g.Key.WeekStartDate,
-                    ServiceName = g.Key.ServiceName,
-                    NumberOfOrders = g.Count(),
-                    AverageOrderValue = g.Average(b => b.TotalPrice ?? 0),
-                    TotalSalesAmount = g.Sum(b => b.TotalPrice ?? 0)
-                })
-                .ToListAsync();
+            // Step 2: Calculate start and end dates for the current week
+            var currentDate = DateTime.Now.Date; // Today's date
+            var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek); // Start of the week (Sunday)
+            var endOfWeek = startOfWeek.AddDays(7); // End of the week (Saturday midnight)
 
-            if (salesReport == null || !salesReport.Any())
+            // Step 3: Fetch bookings and services for the week
+            try
             {
-                return NotFound("No sales data found for the specified date range.");
-            }
+                var bookings = await context.BookingLogs
+                    .Where(b => b.BookingDate >= startOfWeek
+                                && b.BookingDate < endOfWeek // Ensure bookings fall within the week
+                                && !b.IsCanceled
+                                && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by laundry shop ID
+                    .Select(b => new
+                    {
+                        b.BookingDate,
+                        b.LaundryServiceLog.ServiceIds,
+                        b.TotalPrice
+                    })
+                    .ToListAsync(); // Fetch all necessary data
 
-            using (var memoryStream = new MemoryStream())
-            {
-                var pdfDocument = new PdfDocument();
-                var page = pdfDocument.AddPage();
-                var gfx = XGraphics.FromPdfPage(page);
-                var font = new XFont("Arial", 12, XFontStyle.Regular);
-                var yPoint = 40;
-
-                gfx.DrawString("Weekly Sales Report", font, XBrushes.Black, new XRect(0, yPoint, page.Width, page.Height), XStringFormats.TopCenter);
-                yPoint += 30;
-
-                gfx.DrawString("Week Start Date", font, XBrushes.Black, 50, yPoint);
-                gfx.DrawString("Service Name", font, XBrushes.Black, 150, yPoint);
-                gfx.DrawString("Number of Orders", font, XBrushes.Black, 300, yPoint);
-                gfx.DrawString("Avg. Order Value", font, XBrushes.Black, 450, yPoint);
-                gfx.DrawString("Total Sales", font, XBrushes.Black, 600, yPoint);
-                yPoint += 20;
-
-                foreach (var report in salesReport)
+                if (bookings == null || !bookings.Any())
                 {
-                    gfx.DrawString(report.WeekStartDate.ToString("yyyy-MM-dd"), font, XBrushes.Black, 50, yPoint);
-                    gfx.DrawString(report.ServiceName, font, XBrushes.Black, 150, yPoint);
-                    gfx.DrawString(report.NumberOfOrders.ToString(), font, XBrushes.Black, 300, yPoint);
-                    gfx.DrawString(report.AverageOrderValue.ToString("C"), font, XBrushes.Black, 450, yPoint);
-                    gfx.DrawString(report.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 600, yPoint);
-                    yPoint += 20;
+                    return NotFound("No bookings found for the specified week.");
                 }
 
-                pdfDocument.Save(memoryStream, false);
+                // Step 4: Map service names and aggregate weekly sales data
+                var salesReportDTO = bookings
+                .SelectMany(b => b.ServiceIds?.Select(serviceId => new
+                {
+                    ServiceName = context.Services
+                        .Where(service => service.ServiceId == serviceId)
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                    b.BookingDate,
+                    b.TotalPrice
+                }) ?? Enumerable.Empty<dynamic>())
+                .GroupBy(entry => entry.ServiceName) // Group by service name
+                .Select(g => new WeeklySalesReportDTO
+                {
+                    ServiceName = g.Key,
+                    WeekStartDate = startOfWeek,
+                    WeekEndDate = endOfWeek,
+                    NumberOfOrders = g.Count(), // Count remains as an integer
+                    AverageOrderValue = g.Any()
+                        ? (double)g.Average(entry => (decimal)(entry.TotalPrice ?? 0)) // Convert average to double
+                        : 0.0, // Default to 0.0 if no bookings
+                    TotalSalesAmount = g.Sum(entry => (double)(decimal)(entry.TotalPrice ?? 0)) // Convert total to double
+                })
+                .ToList();
 
-                return File(memoryStream.ToArray(), "application/pdf", "WeeklySalesReport.pdf");
+                if (salesReportDTO == null || !salesReportDTO.Any())
+                {
+                    return NotFound("No sales data found for this week.");
+                }
+
+                return Ok(salesReportDTO);
+            }
+            catch (Exception ex)
+            {
+                // Log the error to help with troubleshooting
+                logger.LogError($"Error fetching weekly sales report: {ex.Message}", ex);
+                return StatusCode(500, "Internal server error.");
             }
         }
+
 
         //download monthly
         [HttpGet("GenerateMonthlySales/{id}")]
