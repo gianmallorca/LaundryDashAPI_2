@@ -152,8 +152,8 @@ namespace LaundryDashAPI_2.Controllers
                     WeekStartDate = startOfWeek,
                     WeekEndDate = endOfWeek,
                     NumberOfOrders = g.Count(), // Count is an integer, no cast needed here
-                    AverageOrderValue = Convert.ToDecimal(g.Average(entry => (entry.TotalPrice ?? 0))), // Cast the result of Average to decimal
-                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales for the service
+                    AverageOrderValue = g.Any() ? Convert.ToDecimal(g.Average(entry => (entry.TotalPrice ?? 0M))) : 0M, // Safely cast the result of Average to decimal
+                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0M) // Total sales for the service
                 })
                 .ToList();
 
@@ -171,6 +171,7 @@ namespace LaundryDashAPI_2.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
+
 
 
 
