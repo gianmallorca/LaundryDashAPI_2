@@ -461,17 +461,26 @@ namespace LaundryDashAPI_2.Controllers
             gfx.DrawString("Weekly Sales Report", titleFont, XBrushes.Black, titleX, currentY);
             currentY += 30;
 
+            // Add date header below the title
+            var dateHeader = $"{startOfWeek.ToString("MM/dd/yyyy")} - {endOfWeek.ToString("MM/dd/yyyy")}";
+            var dateHeaderWidth = gfx.MeasureString(dateHeader, headerFont).Width;
+            var dateHeaderX = (page.Width - dateHeaderWidth) / 2;
+            gfx.DrawString(dateHeader, headerFont, XBrushes.Black, dateHeaderX, currentY);
+            currentY += 20; // Add space after the date header
+
             // Table header - Centered
             var tableWidth = 450; // Total width of the table
             var startX = (page.Width - tableWidth) / 2; // Start X position for centering the table
             var columnOffsets = new[] { 0, 80, 200, 300, 400 }; // Offsets for each column within the table
 
-            // Draw Table Header
-            gfx.DrawString("Date", headerFont, XBrushes.Black, startX + columnOffsets[0], currentY);
-            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY);
-            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
-            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
-            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
+            // Center alignment for the header
+            var centerFormat = new XStringFormat { Alignment = XStringAlignment.Center };
+
+            // Draw Table Header - Centered
+            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY, centerFormat);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY, centerFormat);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY, centerFormat);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[4], currentY, centerFormat);
             currentY += 20;
 
             // Aggregate sales data
@@ -513,11 +522,11 @@ namespace LaundryDashAPI_2.Controllers
                 // Draw row with alternating colors
                 gfx.DrawRectangle(rowColor, startX, currentY, tableWidth, 15); // Draw the row with background color
 
-                gfx.DrawString(startOfWeek.ToString("MM/dd/yyyy") + " - " + endOfWeek.ToString("MM/dd/yyyy"), font, XBrushes.Black, startX + columnOffsets[0], currentY);
-                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[1], currentY);
-                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[2], currentY);
-                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[4], currentY);
+                // Draw centered data
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[1], currentY, centerFormat);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[2], currentY, centerFormat);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY, centerFormat);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[4], currentY, centerFormat);
 
                 currentY += 15; // Adjusted row height
                 isAlternateRow = !isAlternateRow; // Toggle row color
@@ -525,8 +534,8 @@ namespace LaundryDashAPI_2.Controllers
 
             // Add space before Total Revenue
             currentY += 20;
-            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
-            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY, centerFormat);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[4], currentY, centerFormat);
 
             // Save and return PDF
             using (var ms = new MemoryStream())
