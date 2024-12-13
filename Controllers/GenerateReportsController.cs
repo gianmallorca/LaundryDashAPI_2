@@ -324,8 +324,9 @@ namespace LaundryDashAPI_2.Controllers
             var gfx = XGraphics.FromPdfPage(page);
 
             // Step 5: Set up font and layout for the report
-            var font = new XFont("Arial", 12);
-            var titleFont = new XFont("Arial", 16, XFontStyle.Bold);
+            var font = new XFont("Arial", 10); // Reduced font size
+            var titleFont = new XFont("Arial", 14, XFontStyle.Bold); // Title font size adjusted
+            var headerFont = new XFont("Arial", 10, XFontStyle.Bold); // Header font size adjusted
             var currentY = 40;
 
             // Title of the report
@@ -333,10 +334,12 @@ namespace LaundryDashAPI_2.Controllers
             currentY += 40;
 
             // Table header
-            gfx.DrawString("Service Name", font, XBrushes.Black, 40, currentY);
-            gfx.DrawString("Number of Orders", font, XBrushes.Black, 200, currentY);
-            gfx.DrawString("Total Sales Amount", font, XBrushes.Black, 400, currentY);
-            gfx.DrawString("Average Order Value", font, XBrushes.Black, 550, currentY);
+            gfx.DrawString("Date", headerFont, XBrushes.Black, 40, currentY);
+            gfx.DrawString("Service", headerFont, XBrushes.Black, 150, currentY);
+            gfx.DrawString("Number of Orders", headerFont, XBrushes.Black, 270, currentY); // Adjusted column spacing
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, 400, currentY); // Adjusted column spacing
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, 530, currentY); // Adjusted column spacing
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, 670, currentY); // Adjusted column spacing
             currentY += 30;
 
             // Step 6: Aggregate and write the data to PDF
@@ -360,11 +363,13 @@ namespace LaundryDashAPI_2.Controllers
             // Add data to the PDF
             foreach (var item in salesReportDTO)
             {
-                gfx.DrawString(item.ServiceName, font, XBrushes.Black, 40, currentY);
-                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, 200, currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 400, currentY);
-                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, 550, currentY);
-                currentY += 20;
+                gfx.DrawString(currentDate.ToString("MM/dd/yyyy"), font, XBrushes.Black, 40, currentY);
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, 150, currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, 270, currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, 400, currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 530, currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, 670, currentY); // Total Revenue same as Total Sales Amount
+                currentY += 18; // Reduced row height to fit more rows
             }
 
             // Step 7: Save the PDF to a memory stream
@@ -378,11 +383,9 @@ namespace LaundryDashAPI_2.Controllers
             }
         }
 
-        // Similar method for weekly and monthly sales reports can be created...
+
+
+
     }
-
-
-
-    
 }
 
