@@ -547,6 +547,130 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+        [HttpGet("DownloadMonthlySalesPDF/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<IActionResult> DownloadMonthlySalesReportPDF(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Get the first day of the current month and the last day of the current month
+            var currentDate = DateTime.Now;
+            var startOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+            // Fetch sales report for the current month
+            var salesReport = await context.BookingLogs
+                .Where(b => b.BookingDate >= startOfMonth
+                            && b.BookingDate <= endOfMonth
+                            && !b.IsCanceled
+                            && b.LaundryServiceLog.LaundryShop.LaundryShopId == id)
+                .Select(b => new
+                {
+                    b.BookingDate,
+                    b.LaundryServiceLog.ServiceIds,
+                    b.TotalPrice
+                })
+                .ToListAsync();
+
+            if (salesReport == null || !salesReport.Any())
+            {
+                return NotFound("No sales data found for the month.");
+            }
+
+            // Create a PDF document
+            var document = new PdfDocument();
+            var page = document.AddPage();
+            var gfx = XGraphics.FromPdfPage(page);
+
+            // Set up font and layout
+            var font = new XFont("Arial", 8); // Smaller font size for better fit
+            var titleFont = new XFont("Arial", 12, XFontStyle.Bold);
+            var headerFont = new XFont("Arial", 9, XFontStyle.Bold);
+            var margin = 20; // Left and right margins
+            var currentY = margin;
+
+            // Title of the report - Centered
+            var titleWidth = gfx.MeasureString("Monthly Sales Report", titleFont).Width;
+            var titleX = (page.Width - titleWidth) / 2;
+            gfx.DrawString("Monthly Sales Report", titleFont, XBrushes.Black, titleX, currentY);
+            currentY += 30;
+
+            // Table header - Centered
+            var tableWidth = 450; // Total width of the table
+            var startX = (page.Width - tableWidth) / 2; // Start X position for centering the table
+            var columnOffsets = new[] { 0, 80, 200, 300, 400 }; // Offsets for each column within the table
+
+            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[0], currentY);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            currentY += 20;
+
+            // Aggregate sales data for the current month
+            var salesReportDTO = salesReport
+                .GroupBy(b => new
+                {
+                    ServiceName = context.Services
+                        .Where(service => b.ServiceIds != null && service.ServiceId == b.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service"
+                })
+                .Select(g => new
+                {
+                    ServiceName = g.Key.ServiceName,
+                    NumberOfOrders = g.Count(),
+                    TotalSalesAmount = g.Sum(b => b.TotalPrice ?? 0),
+                    AverageOrderValue = g.Average(b => b.TotalPrice ?? 0)
+                })
+                .ToList();
+
+            // Calculate total revenue for the month
+            var totalRevenue = salesReportDTO.Sum(item => item.TotalSalesAmount);
+
+            // Add data rows to the PDF
+            foreach (var item in salesReportDTO)
+            {
+                if (currentY > page.Height - margin * 2) // Check for page overflow
+                {
+                    page = document.AddPage(); // Add new page
+                    gfx = XGraphics.FromPdfPage(page);
+                    currentY = margin; // Reset currentY for the new page
+                }
+
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[0], currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[1], currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[2], currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY);
+                currentY += 15; // Adjusted row height
+            }
+
+            // Add space before Total Revenue
+            currentY += 20;
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+
+            // Save and return PDF
+            using (var ms = new MemoryStream())
+            {
+                document.Save(ms, false);
+                ms.Seek(0, SeekOrigin.Begin);
+                return File(ms.ToArray(), "application/pdf", "MonthlySalesReport.pdf");
+            }
+        }
+
+
+
 
 
 
