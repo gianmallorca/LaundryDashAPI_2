@@ -279,7 +279,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //download weekly
-        [HttpGet("GenerateWeeklySales/{id}")]
+        [HttpGet("DownloadWeeklySales/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<WeeklySalesReportDTO>>> GetWeeklySalesReportPDF(Guid id)
         {
@@ -364,7 +364,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //download monthly
-        [HttpGet("GenerateMonthlySales/{id}")]
+        [HttpGet("DownloadMonthlySales/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
         public async Task<ActionResult<List<MonthlySalesReportDTO>>> GetMonthlySalesReportAsync(Guid id, DateTime startDate, DateTime endDate)
         {
