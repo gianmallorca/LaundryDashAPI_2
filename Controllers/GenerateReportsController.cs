@@ -402,6 +402,142 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
+        [HttpGet("DownloadWeeklySalesPDF/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<IActionResult> DownloadWeeklySalesReportPDF(Guid id)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("User email claim is missing.");
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Get the date range for the past 7 days (current week)
+            var currentDate = DateTime.Now.Date;
+            var startOfWeek = currentDate.AddDays(-((int)currentDate.DayOfWeek)); // Start of the current week (Sunday)
+            var endOfWeek = startOfWeek.AddDays(7); // End of the current week (Saturday)
+
+            // Fetch sales report for the last 7 days
+            var salesReport = await context.BookingLogs
+                .Where(b => b.BookingDate >= startOfWeek
+                            && b.BookingDate < endOfWeek
+                            && !b.IsCanceled
+                            && b.LaundryServiceLog.LaundryShop.LaundryShopId == id)
+                .Select(b => new
+                {
+                    b.BookingDate,
+                    b.LaundryServiceLog.ServiceIds,
+                    b.TotalPrice
+                })
+                .ToListAsync();
+
+            if (salesReport == null || !salesReport.Any())
+            {
+                return NotFound("No sales data found for this week.");
+            }
+
+            // Create a PDF document
+            var document = new PdfDocument();
+            var page = document.AddPage();
+            var gfx = XGraphics.FromPdfPage(page);
+
+            // Set up font and layout
+            var font = new XFont("Arial", 8); // Smaller font size for better fit
+            var titleFont = new XFont("Arial", 12, XFontStyle.Bold);
+            var headerFont = new XFont("Arial", 9, XFontStyle.Bold);
+            var margin = 20; // Left and right margins
+            var currentY = margin;
+
+            // Title of the report - Centered
+            var titleWidth = gfx.MeasureString("Weekly Sales Report", titleFont).Width;
+            var titleX = (page.Width - titleWidth) / 2;
+            gfx.DrawString("Weekly Sales Report", titleFont, XBrushes.Black, titleX, currentY);
+            currentY += 30;
+
+            // Table header - Centered
+            var tableWidth = 450; // Total width of the table
+            var startX = (page.Width - tableWidth) / 2; // Start X position for centering the table
+            var columnOffsets = new[] { 0, 80, 200, 300, 400 }; // Offsets for each column within the table
+
+            // Draw Table Header
+            gfx.DrawString("Date", headerFont, XBrushes.Black, startX + columnOffsets[0], currentY);
+            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
+            currentY += 20;
+
+            // Aggregate sales data
+            var salesReportDTO = salesReport
+                .GroupBy(b => new
+                {
+                    ServiceName = context.Services
+                        .Where(service => b.ServiceIds != null && service.ServiceId == b.ServiceIds.FirstOrDefault())
+                        .Select(service => service.ServiceName)
+                        .FirstOrDefault() ?? "Unknown Service"
+                })
+                .Select(g => new
+                {
+                    ServiceName = g.Key.ServiceName,
+                    NumberOfOrders = g.Count(),
+                    TotalSalesAmount = g.Sum(b => b.TotalPrice ?? 0),
+                    AverageOrderValue = g.Average(b => b.TotalPrice ?? 0)
+                })
+                .ToList();
+
+            // Calculate total revenue
+            var totalRevenue = salesReportDTO.Sum(item => item.TotalSalesAmount);
+
+            // Add data rows to the PDF (Zebra table effect)
+            bool isAlternateRow = false; // Variable to alternate row colors
+
+            foreach (var item in salesReportDTO)
+            {
+                if (currentY > page.Height - margin * 2) // Check for page overflow
+                {
+                    page = document.AddPage(); // Add new page
+                    gfx = XGraphics.FromPdfPage(page);
+                    currentY = margin; // Reset currentY for the new page
+                }
+
+                // Alternate row color (zebra table effect)
+                var rowColor = isAlternateRow ? XBrushes.LightGray : XBrushes.White;
+
+                // Draw row with alternating colors
+                gfx.DrawRectangle(rowColor, startX, currentY, tableWidth, 15); // Draw the row with background color
+
+                gfx.DrawString(startOfWeek.ToString("MM/dd/yyyy") + " - " + endOfWeek.ToString("MM/dd/yyyy"), font, XBrushes.Black, startX + columnOffsets[0], currentY);
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[1], currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[2], currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[4], currentY);
+
+                currentY += 15; // Adjusted row height
+                isAlternateRow = !isAlternateRow; // Toggle row color
+            }
+
+            // Add space before Total Revenue
+            currentY += 20;
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
+
+            // Save and return PDF
+            using (var ms = new MemoryStream())
+            {
+                document.Save(ms, false);
+                ms.Seek(0, SeekOrigin.Begin);
+                return File(ms.ToArray(), "application/pdf", "WeeklySalesReport.pdf");
+            }
+        }
+
+
 
 
 
