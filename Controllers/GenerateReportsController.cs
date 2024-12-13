@@ -330,16 +330,22 @@ namespace LaundryDashAPI_2.Controllers
             var margin = 20; // Left and right margins
             var currentY = margin;
 
-            // Title of the report
-            gfx.DrawString("Daily Sales Report", titleFont, XBrushes.Black, new XRect(margin, currentY, page.Width - 2 * margin, page.Height), XStringFormats.TopCenter);
+            // Title of the report - Centered
+            var titleWidth = gfx.MeasureString("Daily Sales Report", titleFont).Width;
+            var titleX = (page.Width - titleWidth) / 2;
+            gfx.DrawString("Daily Sales Report", titleFont, XBrushes.Black, titleX, currentY);
             currentY += 30;
 
-            // Table header
-            gfx.DrawString("Date", headerFont, XBrushes.Black, margin, currentY);
-            gfx.DrawString("Service", headerFont, XBrushes.Black, margin + 80, currentY);
-            gfx.DrawString("Orders", headerFont, XBrushes.Black, margin + 200, currentY);
-            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, margin + 300, currentY);
-            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, margin + 400, currentY);
+            // Table header - Centered
+            var tableWidth = 450; // Total width of the table
+            var startX = (page.Width - tableWidth) / 2; // Start X position for centering the table
+            var columnOffsets = new[] { 0, 80, 200, 300, 400 }; // Offsets for each column within the table
+
+            gfx.DrawString("Date", headerFont, XBrushes.Black, startX + columnOffsets[0], currentY);
+            gfx.DrawString("Service", headerFont, XBrushes.Black, startX + columnOffsets[1], currentY);
+            gfx.DrawString("Orders", headerFont, XBrushes.Black, startX + columnOffsets[2], currentY);
+            gfx.DrawString("Avg Order Value", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            gfx.DrawString("Total Sales", headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
             currentY += 20;
 
             // Aggregate sales data
@@ -373,18 +379,18 @@ namespace LaundryDashAPI_2.Controllers
                     currentY = margin; // Reset currentY for the new page
                 }
 
-                gfx.DrawString(currentDate.ToString("MM/dd/yyyy"), font, XBrushes.Black, margin, currentY);
-                gfx.DrawString(item.ServiceName, font, XBrushes.Black, margin + 80, currentY);
-                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, margin + 200, currentY);
-                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, margin + 300, currentY);
-                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, margin + 400, currentY);
+                gfx.DrawString(currentDate.ToString("MM/dd/yyyy"), font, XBrushes.Black, startX + columnOffsets[0], currentY);
+                gfx.DrawString(item.ServiceName, font, XBrushes.Black, startX + columnOffsets[1], currentY);
+                gfx.DrawString(item.NumberOfOrders.ToString(), font, XBrushes.Black, startX + columnOffsets[2], currentY);
+                gfx.DrawString(item.AverageOrderValue.ToString("C"), font, XBrushes.Black, startX + columnOffsets[3], currentY);
+                gfx.DrawString(item.TotalSalesAmount.ToString("C"), font, XBrushes.Black, startX + columnOffsets[4], currentY);
                 currentY += 15; // Adjusted row height
             }
 
             // Add space before Total Revenue
             currentY += 20;
-            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, 400, currentY);
-            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, 530, currentY);
+            gfx.DrawString("Total Revenue", headerFont, XBrushes.Black, startX + columnOffsets[3], currentY);
+            gfx.DrawString(totalRevenue.ToString("C"), headerFont, XBrushes.Black, startX + columnOffsets[4], currentY);
 
             // Save and return PDF
             using (var ms = new MemoryStream())
@@ -394,6 +400,7 @@ namespace LaundryDashAPI_2.Controllers
                 return File(ms.ToArray(), "application/pdf", "DailySalesReport.pdf");
             }
         }
+
 
 
 
