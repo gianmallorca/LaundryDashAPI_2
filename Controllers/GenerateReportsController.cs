@@ -101,62 +101,77 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("User email claim is missing.");
             }
 
-            // Step 2: Fetch the logged-in user
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            // Step 3: Calculate start and end dates for the current week
+            // Step 2: Calculate start and end dates for the current week
             var currentDate = DateTime.Now.Date; // Today's date
             var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek); // Start of the week (Sunday)
             var endOfWeek = startOfWeek.AddDays(7); // End of the week (Saturday midnight)
 
-            // Step 4: Query to fetch weekly sales data
-            var bookings = await context.BookingLogs
-                .Where(b => b.BookingDate >= startOfWeek
-                            && b.BookingDate < endOfWeek // Ensure bookings fall within the week
-                            && !b.IsCanceled
-                            && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by laundry shop ID
-                .Select(b => new
-                {
-                    b.BookingDate,
-                    b.LaundryServiceLog.ServiceIds,
-                    b.TotalPrice
-                })
-                .ToListAsync(); // Fetch all necessary data
-
-            // Step 5: Map service names and aggregate weekly sales data
-            var salesReportDTO = bookings
-                .SelectMany(b => b.ServiceIds?.Select(serviceId => new
-                {
-                    ServiceName = context.Services
-                        .Where(service => service.ServiceId == serviceId)
-                        .Select(service => service.ServiceName)
-                        .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
-                    b.BookingDate,
-                    b.TotalPrice
-                }) ?? Enumerable.Empty<dynamic>())
-                .GroupBy(entry => entry.ServiceName) // Group by service name
-                .Select(g => new WeeklySalesReportDTO
-                {
-                    ServiceName = g.Key.ServiceName,
-                    WeekStartDate = startOfWeek,
-                    WeekEndDate = endOfWeek,
-                    NumberOfOrders = g.Count(), // Count the orders for the service
-                    AverageOrderValue = (decimal)g.Average(entry => (double)(entry.TotalPrice ?? 0)), // Explicit casting
-                    TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales for the service
-                })
-                .ToList();
-
-            if (salesReportDTO == null || !salesReportDTO.Any())
+            // Step 3: Fetch bookings and services for the week
+            try
             {
-                return NotFound("No sales data found for this week.");
-            }
+                var bookings = await context.BookingLogs
+                    .Where(b => b.BookingDate >= startOfWeek
+                                && b.BookingDate < endOfWeek // Ensure bookings fall within the week
+                                && !b.IsCanceled
+                                && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by laundry shop ID
+                    .Select(b => new
+                    {
+                        b.BookingDate,
+                        b.LaundryServiceLog.ServiceIds,
+                        b.TotalPrice
+                    })
+                    .ToListAsync(); // Fetch all necessary data
 
-            return Ok(salesReportDTO);
+                if (bookings == null || !bookings.Any())
+                {
+                    return NotFound("No bookings found for the specified week.");
+                }
+
+                // Step 4: Map service names and aggregate weekly sales data
+                var salesReportDTO = bookings
+                    .SelectMany(b => b.ServiceIds?.Select(serviceId => new
+                    {
+                        ServiceName = context.Services
+                            .Where(service => service.ServiceId == serviceId)
+                            .Select(service => service.ServiceName)
+                            .FirstOrDefault() ?? "Unknown Service", // Resolve service name or fallback
+                        b.BookingDate,
+                        b.TotalPrice
+                    }) ?? Enumerable.Empty<dynamic>())
+                    .GroupBy(entry => entry.ServiceName) // Group by service name
+                    .Select(g => new WeeklySalesReportDTO
+                    {
+                        ServiceName = g.Key,
+                        WeekStartDate = startOfWeek,
+                        WeekEndDate = endOfWeek,
+                        NumberOfOrders = g.Count(), // Count the orders for the service
+                        AverageOrderValue = Convert.ToDecimal(g.Average(entry => (entry.TotalPrice ?? 0)))
+, // Average price of orders
+                        TotalSalesAmount = g.Sum(entry => entry.TotalPrice ?? 0) // Total sales for the service
+                    })
+                    .ToList();
+
+                if (salesReportDTO == null || !salesReportDTO.Any())
+                {
+                    return NotFound("No sales data found for this week.");
+                }
+
+                return Ok(salesReportDTO);
+            }
+            catch (Exception ex)
+            {
+                // Log the error to help with troubleshooting
+                logger.LogError($"Error fetching weekly sales report: {ex.Message}", ex);
+                return StatusCode(500, "Internal server error.");
+            }
         }
+
 
 
 
