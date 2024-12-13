@@ -80,7 +80,7 @@ namespace LaundryDashAPI_2.Controllers
                     NumberOfOrders = g.Count(), // Count the orders in each group
                     AverageOrderValue = g.Average(b => b.TotalPrice ?? 0), // Average price of orders in the group
                     TotalSalesAmount = g.Sum(b => b.TotalPrice ?? 0), // Total sales for the service
-                    TotalRevenue = salesReport.Sum(b => b.TotalPrice ?? 0) // Total revenue for all sales for the day
+                    TotalRevenue = salesReport.Sum(b => b.TotalPrice ?? 0) // Total revenue for all bookings on the day
                 })
                 .ToList();
 
@@ -91,6 +91,7 @@ namespace LaundryDashAPI_2.Controllers
 
             return Ok(salesReportDTO);
         }
+
 
 
 
