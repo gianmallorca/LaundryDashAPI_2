@@ -123,6 +123,7 @@ namespace LaundryDashAPI_2.Controllers
                                 && b.LaundryServiceLog.LaundryShop.LaundryShopId == id) // Filter by laundry shop ID
                     .Select(b => new
                     {
+                        b.BookingLogId, // Add BookingLogId here
                         b.BookingDate,
                         b.LaundryServiceLog.ServiceIds, // Get related services
                         b.TotalPrice
@@ -134,27 +135,38 @@ namespace LaundryDashAPI_2.Controllers
                     return NotFound("No bookings found for the specified week.");
                 }
 
-                // Step 4: Group bookings by service and aggregate weekly sales data
-                var reports = await (from booking in context.BookingLogs
-                                     where booking.BookingDate >= startOfWeek && booking.BookingDate < endOfWeek
-                                     && booking.LaundryServiceLog.LaundryShop.LaundryShopId == id
-                                     group booking by new { booking.LaundryServiceLog.ServiceIds, booking.BookingDate.Date } into g
-                                     select new WeeklySalesReportDTO
-                                     {
-                                         ServiceName = string.Join(", ", g.Key.ServiceIds), // Aggregate service names (if needed)
-                                         WeekStartDate = startOfWeek,
-                                         WeekEndDate = endOfWeek,
-                                         NumberOfOrders = g.Count(),
-                                         AverageOrderValue = g.Average(entry => entry.TotalPrice.HasValue ? (double)entry.TotalPrice : 0),  // Cast to double explicitly
-                                         TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0)  // Sum total sales as double
-                                     }).ToListAsync();
+                // Step 4: Fetch the service names for the serviceIds (after retrieving the bookings)
+                var allServiceIds = bookings.SelectMany(b => b.ServiceIds).Distinct().ToList();
+                var serviceNames = await context.Services
+                    .Where(s => allServiceIds.Contains(s.ServiceId))
+                    .Select(s => new { s.ServiceId, s.ServiceName })
+                    .ToDictionaryAsync(s => s.ServiceId, s => s.ServiceName);
 
-                if (reports == null || !reports.Any())
+                // Step 5: Group bookings by service name and aggregate weekly sales data
+                var groupedReports = bookings
+                    .SelectMany(b => b.ServiceIds.Select(serviceId => new
+                    {
+                        ServiceName = serviceNames.ContainsKey(serviceId) ? serviceNames[serviceId] : "Unknown Service",
+                        b.TotalPrice
+                    }))
+                    .GroupBy(g => g.ServiceName)
+                    .Select(g => new WeeklySalesReportDTO
+                    {
+                        ServiceName = g.Key,
+                        WeekStartDate = startOfWeek,
+                        WeekEndDate = endOfWeek,
+                        NumberOfOrders = g.Count(),
+                        AverageOrderValue = g.Average(entry => entry.TotalPrice.HasValue ? (double)entry.TotalPrice : 0),
+                        TotalSalesAmount = (double)g.Sum(entry => entry.TotalPrice.HasValue ? entry.TotalPrice.Value : 0)
+                    })
+                    .ToList();
+
+                if (groupedReports == null || !groupedReports.Any())
                 {
                     return NotFound("No sales data found for this week.");
                 }
 
-                return Ok(reports);
+                return Ok(groupedReports);
             }
             catch (Exception ex)
             {
@@ -163,7 +175,6 @@ namespace LaundryDashAPI_2.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
-
 
 
 
