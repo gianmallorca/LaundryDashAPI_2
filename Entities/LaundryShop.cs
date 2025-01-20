@@ -42,11 +42,13 @@ namespace LaundryDashAPI_2.Entities
         public bool IsVerifiedByAdmin { get; set; }
 
         //permits
-        public string? BusinessPermitId { get; set; }
-        public string? DTIPermitId { get; set; }
-        public string? TaxIdentificationNumber { get; set; }
-        public string? EnvironmentalPermit { get; set; }
-        public string? SanitaryPermit { get; set; }
+        //public string? BusinessPermitId { get; set; }
+        //public string? DTIPermitId { get; set; }
+        //public string? TaxIdentificationNumber { get; set; }
+        //public string? EnvironmentalPermit { get; set; }
+        //public string? SanitaryPermit { get; set; }
+
+        public string? BusinessPermitsPDF { get; set; }
 
 
         public ICollection<LaundryServiceLog> LaundryServiceLogs { get; set; }

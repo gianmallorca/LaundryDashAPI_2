@@ -232,6 +232,11 @@ namespace LaundryDashAPI_2.Controllers
                 laundryShop.LaundryShopPicture = await fileStorageService.SaveFile(containerName, laundryShopCreationDTO.LaundryShopPicture);
             }
 
+            if (laundryShopCreationDTO.BusinessPermitsPDF != null)
+            {
+                laundryShop.BusinessPermitsPDF = await fileStorageService.SaveFile(containerName, laundryShopCreationDTO.BusinessPermitsPDF);
+            }
+
 
             context.LaundryShops.Add(laundryShop);
             await context.SaveChangesAsync();
@@ -272,11 +277,11 @@ namespace LaundryDashAPI_2.Controllers
                 Saturday = laundryShop.Saturday,
                 Sunday = laundryShop.Sunday,
 
-                BusinessPermitId = laundryShop.BusinessPermitId,
-                DTIPermitId = laundryShop.DTIPermitId,
-                TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
-                EnvironmentalPermit = laundryShop.EnvironmentalPermit,
-                SanitaryPermit = laundryShop.SanitaryPermit,
+                //BusinessPermitId = laundryShop.BusinessPermitId,
+                //DTIPermitId = laundryShop.DTIPermitId,
+                //TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
+                //EnvironmentalPermit = laundryShop.EnvironmentalPermit,
+                //SanitaryPermit = laundryShop.SanitaryPermit,
                 LaundryShopPicture = laundryShop.LaundryShopPicture
             };
 
