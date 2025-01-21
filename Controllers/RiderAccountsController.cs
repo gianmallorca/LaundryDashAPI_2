@@ -68,7 +68,7 @@ namespace LaundryDashAPI_2.Controllers
      
 
         [HttpPost("create")]
-        public async Task<ActionResult> Create([FromBody] ApplicationUserCredentials riderUserCredentials)
+        public async Task<ActionResult> Create([FromForm] ApplicationUserCredentials riderUserCredentials)
         {
             if (riderUserCredentials.Password != riderUserCredentials.ConfirmPassword)
             {
@@ -94,7 +94,7 @@ namespace LaundryDashAPI_2.Controllers
                 PhoneNumber = riderUserCredentials.PhoneNumber
             };
 
-            if (riderUserCredentials.BusinessPermitsOfOwner != null)
+            if (riderUserCredentials.BusinessPermitsOfOwner == null)
             {
                 user.BusinessPermitsOfOwner = await fileStorageService.SaveFile(containerName, riderUserCredentials.BusinessPermitsOfOwner);
             }

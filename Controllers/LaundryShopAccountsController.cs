@@ -68,7 +68,7 @@ namespace LaundryDashAPI_2.Controllers
         }
         //fix
         [HttpPost("create")]
-        public async Task<ActionResult> Create([FromBody] ApplicationUserCredentials laundryShopUserCredentials)
+        public async Task<ActionResult> Create([FromForm] ApplicationUserCredentials laundryShopUserCredentials)
         {
             if (laundryShopUserCredentials.Password != laundryShopUserCredentials.ConfirmPassword)
             {
