@@ -94,7 +94,7 @@ namespace LaundryDashAPI_2.Controllers
                 PhoneNumber = riderUserCredentials.PhoneNumber
             };
 
-            if (riderUserCredentials.BusinessPermitsOfOwner != null)
+            if (riderUserCredentials.DriversLicense != null)
             {
                 user.DriversLicense = await fileStorageService.SaveFile(containerName, riderUserCredentials.DriversLicense);
             }
