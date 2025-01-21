@@ -29,6 +29,7 @@ namespace LaundryDashAPI_2.DTOs.AppUser
                 return null;
             }
         }
+        public int? UserAge { get; set; }
 
         [Required]
         public string? Gender { get; set; }
