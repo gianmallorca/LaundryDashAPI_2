@@ -96,7 +96,7 @@ namespace LaundryDashAPI_2.Controllers
 
             if (riderUserCredentials.BusinessPermitsOfOwner != null)
             {
-                user.DriversLicense = await fileStorageService.SaveFile(containerName, riderUserCredentials.BusinessPermitsOfOwner);
+                user.DriversLicense = await fileStorageService.SaveFile(containerName, riderUserCredentials.DriversLicense);
             }
 
 
