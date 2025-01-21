@@ -43,13 +43,14 @@ namespace LaundryDashAPI_2.DTOs.AppUser
         public string? UserAddress { get; set; }
 
         //laundry shop account prop
-        public string? TaxIdentificationNumber { get; set; }
-        public string? BusinessPermitNumber { get; set; }
+        //public string? TaxIdentificationNumber { get; set; }
+        //public string? BusinessPermitNumber { get; set; }
+        public IFormFile BusinessPermitsOfOwner { get; set; }
 
         //rider account prop
         public string? VehicleType { get; set; }
         public decimal? VehicleCapacity { get; set; }
-        public string? DriversLicenseNumber { get; set; }
+        public IFormFile DriversLicense { get; set; }
 
         [Required]
         [Email]

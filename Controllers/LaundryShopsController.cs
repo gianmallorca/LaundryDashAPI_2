@@ -37,29 +37,7 @@ namespace LaundryDashAPI_2.Controllers
             this.userManager = userManager;
         }
 
-        //[HttpGet("getLaundryShop")]
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccountOrClientAccount")]
-        //public async Task<ActionResult<List<LaundryShopDTO>>> Get([FromQuery] PaginationDTO paginationDTO)
-        //{
-        //    var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-        //    // Check if the email is null or empty
-        //    if (string.IsNullOrEmpty(email))
-        //    {
-        //        return BadRequest("User email claim is missing.");
-        //    }
-
-
-        //    var queryable = context.LaundryShops.AsQueryable();
-        //    queryable = queryable.Where(x => x.IsVerifiedByAdmin == true);
-        //    await HttpContext.InsertParametersPaginationInHeader(queryable);
-
-        //    var laundryShops = await queryable.OrderBy(x => x.LaundryShopName).Paginate(paginationDTO).ToListAsync();
-
-        //    return mapper.Map<List<LaundryShopDTO>>(laundryShops);
-
-
-        //}
+       
 
         [HttpGet("getLaundryShop")]
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
@@ -305,6 +283,11 @@ namespace LaundryDashAPI_2.Controllers
             if (laundryShopCreationDTO.LaundryShopPicture != null)
             {
                 model.LaundryShopPicture = await fileStorageService.EditFile(containerName, laundryShopCreationDTO.LaundryShopPicture, model.LaundryShopPicture);
+            }
+
+            if (laundryShopCreationDTO.BusinessPermitsPDF != null)
+            {
+                model.BusinessPermitsPDF = await fileStorageService.EditFile(containerName, laundryShopCreationDTO.BusinessPermitsPDF, model.BusinessPermitsPDF);
             }
 
             await context.SaveChangesAsync();

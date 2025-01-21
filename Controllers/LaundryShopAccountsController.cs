@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LaundryDashAPI_2.DTOs;
 using LaundryDashAPI_2.DTOs.AppUser;
+using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,14 +26,18 @@ namespace LaundryDashAPI_2.Controllers
         private readonly IConfiguration configuration;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IFileStorageService fileStorageService;
+        private readonly string containerName = "LaundryShopImages";
 
-        public LaundryShopAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+
+        public LaundryShopAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IFileStorageService fileStorageService, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
             this.context = context;
             this.mapper = mapper;
+            this.fileStorageService = fileStorageService;
         }
 
         private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials laundryShopUserCredentials, ApplicationUser user)
@@ -84,10 +89,14 @@ namespace LaundryDashAPI_2.Controllers
                 City = laundryShopUserCredentials.City,
                 Barangay = laundryShopUserCredentials.Barangay,
                 BrgyStreet = laundryShopUserCredentials.BrgyStreet,
-                TaxIdentificationNumber = laundryShopUserCredentials.TaxIdentificationNumber,
-                BusinessPermitNumber = laundryShopUserCredentials.BusinessPermitNumber,
                 PhoneNumber = laundryShopUserCredentials.PhoneNumber
             };
+
+            if (laundryShopUserCredentials.BusinessPermitsOfOwner != null)
+            {
+                user.BusinessPermitsOfOwner = await fileStorageService.SaveFile(containerName, laundryShopUserCredentials.BusinessPermitsOfOwner);
+            }
+
 
             // Attempt to create the user
             var result = await userManager.CreateAsync(user, laundryShopUserCredentials.Password);

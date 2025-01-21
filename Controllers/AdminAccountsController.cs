@@ -26,14 +26,17 @@ namespace LaundryDashAPI_2.Controllers
         private readonly IConfiguration configuration;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IFileStorageService fileStorageService;
+        private readonly string containerName = "LaundryShopImages";
 
-        public AdminAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+        public AdminAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IFileStorageService fileStorageService, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
             this.context = context;
             this.mapper = mapper;
+            this.fileStorageService = fileStorageService;
         }
         //Token
         private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials userCredentials, ApplicationUser user)
@@ -218,18 +221,18 @@ namespace LaundryDashAPI_2.Controllers
                 PhoneNumber = user.PhoneNumber,
             }; // Missing semicolon added here
 
-            if (user.UserType == "LaundryShopAccount")
-            {
-                userDetails.TaxIdentificationNumber = user.TaxIdentificationNumber ?? null;
-                userDetails.BusinessPermitNumber = user.BusinessPermitNumber ?? null;
-            }
+            //if (user.UserType == "LaundryShopAccount")
+            //{
+            //    userDetails.TaxIdentificationNumber = user.TaxIdentificationNumber ?? null;
+            //    userDetails.BusinessPermitNumber = user.BusinessPermitNumber ?? null;
+            //}
 
-            if (user.UserType == "RiderAccount")
-            {
-                userDetails.VehicleType = user.VehicleType ?? null;
-                userDetails.VehicleCapacity = user.VehicleCapacity ?? null;
-                userDetails.DriversLicenseNumber = user.DriversLicenseNumber ?? null;
-            }
+            //if (user.UserType == "RiderAccount")
+            //{
+            //    userDetails.VehicleType = user.VehicleType ?? null;
+            //    userDetails.VehicleCapacity = user.VehicleCapacity ?? null;
+            //    userDetails.DriversLicenseNumber = user.DriversLicenseNumber ?? null;
+            //}
 
             return Ok(userDetails);
         }
@@ -327,7 +330,7 @@ namespace LaundryDashAPI_2.Controllers
         //update user details
         [HttpPut("UpdateUserDetails/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "AllAccounts")]
-        public async Task<ActionResult> UpdateUserDetails(Guid id, [FromBody] ApplicationUser adminUserCredentials)
+        public async Task<ActionResult> UpdateUserDetails(Guid id, [FromBody] ApplicationUserCredentials adminUserCredentials)
         {
             // Find the existing user by ID
             var user = await userManager.FindByIdAsync(id.ToString());
@@ -337,29 +340,32 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Update common user details
-            user.FirstName = adminUserCredentials.FirstName;
-            user.LastName = adminUserCredentials.LastName;
-            user.UserName = adminUserCredentials.Email;
-            user.Email = adminUserCredentials.Email;
-            user.Birthday = adminUserCredentials.Birthday;
-            user.Age = adminUserCredentials.Age;
-            user.Gender = adminUserCredentials.Gender;
-            user.City = adminUserCredentials.City;
-            user.Barangay = adminUserCredentials.Barangay;
-            user.BrgyStreet = adminUserCredentials.BrgyStreet;
-            user.PhoneNumber = adminUserCredentials.PhoneNumber;
+
+            var appUser = new ApplicationUser
+            {
+                FirstName = adminUserCredentials.FirstName,
+                LastName = adminUserCredentials.LastName,
+                UserName = adminUserCredentials.Email,
+                Email = adminUserCredentials.Email,
+                Birthday = adminUserCredentials.Birthday,
+                Age = adminUserCredentials.Age,
+                Gender = adminUserCredentials.Gender,
+                City = adminUserCredentials.City,
+                Barangay = adminUserCredentials.Barangay,
+                BrgyStreet = adminUserCredentials.BrgyStreet,
+                PhoneNumber = adminUserCredentials.PhoneNumber
+            };
 
             // Update specific properties based on user type
             if (adminUserCredentials.UserType == "LaundryShopAccount")
             {
-                user.TaxIdentificationNumber = adminUserCredentials.TaxIdentificationNumber;
-                user.BusinessPermitNumber = adminUserCredentials.BusinessPermitNumber;
+                appUser.BusinessPermitsOfOwner = await fileStorageService.SaveFile(containerName, adminUserCredentials.BusinessPermitsOfOwner);
             }
             else if (adminUserCredentials.UserType == "RiderAccount")
             {
-                user.VehicleType = adminUserCredentials.VehicleType;
-                user.VehicleCapacity = adminUserCredentials.VehicleCapacity;
-                user.DriversLicenseNumber = adminUserCredentials.DriversLicenseNumber;
+                appUser.VehicleType = adminUserCredentials.VehicleType;
+                appUser.VehicleCapacity = adminUserCredentials.VehicleCapacity;
+                appUser.DriversLicense = await fileStorageService.SaveFile(containerName, adminUserCredentials.DriversLicense);
             }
 
             // Update approval status and user type

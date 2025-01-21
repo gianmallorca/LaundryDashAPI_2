@@ -25,14 +25,18 @@ namespace LaundryDashAPI_2.Controllers
         private readonly IConfiguration configuration;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IFileStorageService fileStorageService;
+        private readonly string containerName = "LaundryShopImages";
 
-        public RiderAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
+
+        public RiderAccountsController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IFileStorageService fileStorageService, IConfiguration configuration, ApplicationDbContext context, IMapper mapper)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
             this.context = context;
             this.mapper = mapper;
+            this.fileStorageService = fileStorageService;
         }
 
         private async Task<AuthenticationResponse> BuildToken(ApplicationUserCredentials riderUserCredentials, ApplicationUser user)
@@ -87,9 +91,13 @@ namespace LaundryDashAPI_2.Controllers
                 BrgyStreet = riderUserCredentials.BrgyStreet,
                 VehicleType = riderUserCredentials.VehicleType,
                 VehicleCapacity = riderUserCredentials.VehicleCapacity,
-                DriversLicenseNumber = riderUserCredentials.DriversLicenseNumber,
                 PhoneNumber = riderUserCredentials.PhoneNumber
             };
+
+            if (riderUserCredentials.BusinessPermitsOfOwner != null)
+            {
+                user.BusinessPermitsOfOwner = await fileStorageService.SaveFile(containerName, riderUserCredentials.BusinessPermitsOfOwner);
+            }
 
             // Attempt to create the user
             var result = await userManager.CreateAsync(user, riderUserCredentials.Password);

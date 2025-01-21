@@ -18,13 +18,15 @@ namespace LaundryDashAPI_2.Entities
         public string? UserType { get; set; }
 
         //laundry shop account prop
-        public string? TaxIdentificationNumber { get; set; }
-        public string? BusinessPermitNumber { get; set; }
+        //public string? TaxIdentificationNumber { get; set; }
+        //public string? BusinessPermitNumber { get; set; }
+        public string? BusinessPermitsOfOwner { get; set; }
 
         //rider account prop
         public string? VehicleType { get; set; }
         public decimal? VehicleCapacity {get;set;}
-        public string? DriversLicenseNumber { get; set; }
+        //public string? DriversLicenseNumber { get; set; }
+        public string? DriversLicense { get; set; }
 
 
     }
