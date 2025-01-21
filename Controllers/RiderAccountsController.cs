@@ -94,10 +94,11 @@ namespace LaundryDashAPI_2.Controllers
                 PhoneNumber = riderUserCredentials.PhoneNumber
             };
 
-            if (riderUserCredentials.BusinessPermitsOfOwner == null)
+            if (riderUserCredentials.BusinessPermitsOfOwner != null)
             {
-                user.BusinessPermitsOfOwner = await fileStorageService.SaveFile(containerName, riderUserCredentials.BusinessPermitsOfOwner);
+                user.DriversLicense = await fileStorageService.SaveFile(containerName, riderUserCredentials.BusinessPermitsOfOwner);
             }
+
 
             // Attempt to create the user
             var result = await userManager.CreateAsync(user, riderUserCredentials.Password);
@@ -105,7 +106,7 @@ namespace LaundryDashAPI_2.Controllers
             if (result.Succeeded)
             {
                 // Do not issue a claim or token yet since the user is not approved
-                return Ok(new { Message = "User created successfully, but approval is pending." });
+                return Ok(new { Message = "Laundry shop user created successfully, but approval is pending." });
             }
             else
             {

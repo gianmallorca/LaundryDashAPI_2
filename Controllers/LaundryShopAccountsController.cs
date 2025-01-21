@@ -89,7 +89,7 @@ namespace LaundryDashAPI_2.Controllers
                 City = laundryShopUserCredentials.City,
                 Barangay = laundryShopUserCredentials.Barangay,
                 BrgyStreet = laundryShopUserCredentials.BrgyStreet,
-                PhoneNumber = laundryShopUserCredentials.PhoneNumber
+                PhoneNumber = laundryShopUserCredentials.PhoneNumber 
             };
 
             if (laundryShopUserCredentials.BusinessPermitsOfOwner != null)
