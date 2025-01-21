@@ -386,7 +386,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
         //view user details for approval
-        [HttpGet("ViewUserDetailsById")]
+        [HttpGet("ViewUserDetailsById/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
         public async Task<ActionResult<ApplicationUserCredentials>> ViewUserDetails(string id)
         {
@@ -432,8 +432,8 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        [HttpGet("GetPdfByUserId/{userId}")]
-        public async Task<IActionResult> GetPdfByUserId(string userId)
+        [HttpGet("GetPdfByUserId/{id}")]
+        public async Task<IActionResult> GetPdfByUserId(string id)
         {
             // Define the folder path where PDF files are stored
             var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash API New\LaundryShopImages";
@@ -445,7 +445,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Retrieve the user from the database by the given UserId
-            var user = await userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByIdAsync(id);
 
             // Check if the user exists
             if (user == null)
