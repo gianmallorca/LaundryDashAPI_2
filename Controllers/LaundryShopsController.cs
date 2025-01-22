@@ -297,9 +297,21 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Map the updated properties from the DTO to the existing entity, excluding the picture
-            mapper.Map(laundryShopUpdateDTO, laundryShop);
+            laundryShop.LaundryShopName = laundryShopUpdateDTO.LaundryShopName;
+            laundryShop.City = laundryShopUpdateDTO.City;
+            laundryShop.Barangay = laundryShopUpdateDTO.Barangay;
+            laundryShop.BrgyStreet = laundryShopUpdateDTO.BrgyStreet;
+            laundryShop.ContactNum = laundryShopUpdateDTO.ContactNum;
+            laundryShop.TimeOpen = laundryShopUpdateDTO.TimeOpen;
+            laundryShop.TimeClose = laundryShopUpdateDTO.TimeClose;
+            laundryShop.Monday = laundryShopUpdateDTO.Monday;
+            laundryShop.Tuesday = laundryShopUpdateDTO.Tuesday;
+            laundryShop.Wednesday = laundryShopUpdateDTO.Wednesday;
+            laundryShop.Thursday = laundryShopUpdateDTO.Thursday;
+            laundryShop.Friday = laundryShopUpdateDTO.Friday;
+            laundryShop.Saturday = laundryShopUpdateDTO.Saturday;
+            laundryShop.Sunday = laundryShopUpdateDTO.Sunday;
 
-            laundryShop.AddedById = user.Id;
 
             // Handle laundry shop picture update only if a new picture is provided
             if (laundryShopUpdateDTO.LaundryShopPicture != null)
