@@ -3,13 +3,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LaundryDashAPI_2.DTOs.LaundryShop
 {
-    public class LaundryShopCreationDTO
+    public class LaundryShopUpdateDTO
     {
         [Required(ErrorMessage = "The field with name {0} is required")]
         [StringLength(120)]
         [FirstLetterUppercase]
         public string LaundryShopName { get; set; }
-        public IFormFile LaundryShopPicture { get; set; }
+        public IFormFile? LaundryShopPicture { get; set; }
 
         [Required(ErrorMessage = "The field with name {0} is required")]
         public string City { get; set; }
@@ -19,7 +19,6 @@ namespace LaundryDashAPI_2.DTOs.LaundryShop
 
         [Required(ErrorMessage = "The field with name {0} is required")]
         public string BrgyStreet { get; set; }
-
 
         public string? ContactNum { get; set; }
         public string? TimeOpen { get; set; }
@@ -31,15 +30,5 @@ namespace LaundryDashAPI_2.DTOs.LaundryShop
         public bool Friday { get; set; }
         public bool Saturday { get; set; }
         public bool Sunday { get; set; }
-
-        //permits
-        //public string? BusinessPermitId { get; set; }
-        //public string? DTIPermitId { get; set; }
-        //public string? TaxIdentificationNumber { get; set; }
-        //public string? EnvironmentalPermit { get; set; }
-        //public string? SanitaryPermit { get; set; }
-        public IFormFile? BusinessPermitsPDF { get; set; }
-
-
     }
 }

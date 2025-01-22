@@ -2,6 +2,7 @@
 
 using LaundryDashAPI_2;
 using LaundryDashAPI_2.DTOs;
+using LaundryDashAPI_2.DTOs.LaundryServiceLog;
 using LaundryDashAPI_2.DTOs.LaundryShop;
 using LaundryDashAPI_2.Entities;
 using LaundryDashAPI_2.Helpers;
@@ -254,6 +255,12 @@ namespace LaundryDashAPI_2.Controllers
                 Friday = laundryShop.Friday,
                 Saturday = laundryShop.Saturday,
                 Sunday = laundryShop.Sunday,
+
+                //BusinessPermitId = laundryShop.BusinessPermitId,
+                //DTIPermitId = laundryShop.DTIPermitId,
+                //TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
+                //EnvironmentalPermit = laundryShop.EnvironmentalPermit,
+                //SanitaryPermit = laundryShop.SanitaryPermit,
                 LaundryShopPicture = laundryShop.LaundryShopPicture
             };
 
@@ -263,30 +270,49 @@ namespace LaundryDashAPI_2.Controllers
 
         //edit shop
         [HttpPut("EditShopDetails/{id}")]
-        public async Task<ActionResult> Put(Guid id, [FromForm] LaundryShopCreationDTO laundryShopCreationDTO)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdminOrLaundryShopAccount")]
+        public async Task<ActionResult> EditShopDetails(Guid id, [FromForm] LaundryShopUpdateDTO laundryShopUpdateDTO)
         {
-            var model = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
-            
-            if (model == null)
+            if (laundryShopUpdateDTO == null)
             {
-                return NotFound();
+                return BadRequest("Request body cannot be null.");
             }
 
-            model = mapper.Map(laundryShopCreationDTO, model);
-
-            if (laundryShopCreationDTO.LaundryShopPicture != null)
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(ls => ls.LaundryShopId == id);
+            if (laundryShop == null)
             {
-                model.LaundryShopPicture = await fileStorageService.EditFile(containerName, laundryShopCreationDTO.LaundryShopPicture, model.LaundryShopPicture);
+                return NotFound("Laundry shop not found.");
             }
 
-            if (laundryShopCreationDTO.BusinessPermitsPDF != null)
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
             {
-                model.BusinessPermitsPDF = await fileStorageService.EditFile(containerName, laundryShopCreationDTO.BusinessPermitsPDF, model.BusinessPermitsPDF);
+                return BadRequest("User email claim is missing.");
             }
 
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Map the updated properties from the DTO to the existing entity, excluding the picture
+            mapper.Map(laundryShopUpdateDTO, laundryShop);
+
+            laundryShop.AddedById = user.Id;
+
+            // Handle laundry shop picture update only if a new picture is provided
+            if (laundryShopUpdateDTO.LaundryShopPicture != null)
+            {
+                laundryShop.LaundryShopPicture = await fileStorageService.SaveFile(containerName, laundryShopUpdateDTO.LaundryShopPicture);
+            }
+
+            // Save changes to the database
             await context.SaveChangesAsync();
+
             return NoContent();
         }
+
 
 
         [HttpGet("getPendingLaundryShops")]
