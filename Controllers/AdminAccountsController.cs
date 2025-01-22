@@ -432,62 +432,8 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        //[HttpGet("GetPdfByUserId/{id}")]
-        //public async Task<IActionResult> GetPdfByUserId(string id)
-        //{
-        //    // Define the folder path where PDF files are stored
-        //    var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash API New\LaundryShopImages";
-
-        //    // Check if the folder exists
-        //    if (!Directory.Exists(folderPath))
-        //    {
-        //        return NotFound("PDF folder does not exist.");
-        //    }
-
-        //    // Retrieve the user from the database by the given UserId
-        //    var user = await userManager.FindByIdAsync(id);
-
-        //    // Check if the user exists
-        //    if (user == null)
-        //    {
-        //        return NotFound("User not found.");
-        //    }
-
-        //    // Determine the file name based on the UserType
-        //    string pdfFileName = user.UserType switch
-        //    {
-        //        "RiderAccount" => user.DriversLicense, // Get DriversLicense for RiderAccount
-        //        "LaundryShopAccount" => user.BusinessPermitsOfOwner, // Get BusinessPermitsOfOwner for LaundryShopAccount
-        //        _ => null // Handle cases where UserType does not match expected values
-        //    };
-
-        //    // Ensure the file name is not null or empty
-        //    if (string.IsNullOrEmpty(pdfFileName))
-        //    {
-        //        return NotFound($"No PDF document associated with this user for user type '{user.UserType}'.");
-        //    }
-
-        //    // Build the full file path by combining the folder path and PDF file name
-        //    var filePath = Path.Combine(folderPath, pdfFileName);
-
-        //    // Check if the file exists
-        //    if (!System.IO.File.Exists(filePath))
-        //    {
-        //        return NotFound("PDF file not found.");
-        //    }
-
-        //    // Read the PDF file bytes
-        //    var pdfBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-
-        //    // Set the MIME type for PDF files
-        //    const string contentType = "application/pdf";
-
-        //    // Return the PDF as a file response with the appropriate MIME type and force download
-        //    return File(pdfBytes, contentType, pdfFileName);
-        //}
-
-        [HttpGet("GetPdf")]//use for account approval and shop approval to view
-        public async Task<IActionResult> GetPdf([FromQuery] Guid? laundryShopId, [FromQuery] string userId)
+        [HttpGet("GetPdfByUserId/{id}")]
+        public async Task<IActionResult> GetPdfByUserId(string id)
         {
             // Define the folder path where PDF files are stored
             var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash API New\LaundryShopImages";
@@ -498,51 +444,27 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("PDF folder does not exist.");
             }
 
-            string pdfFileName = null;
+            // Retrieve the user from the database by the given UserId
+            var user = await userManager.FindByIdAsync(id);
 
-            if (laundryShopId.HasValue)
+            // Check if the user exists
+            if (user == null)
             {
-                // Fetch PDF by LaundryShopId
-                var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(shop => shop.LaundryShopId == laundryShopId);
-
-                if (laundryShop == null)
-                {
-                    return NotFound("Laundry shop not found.");
-                }
-
-                pdfFileName = laundryShop.BusinessPermitsPDF;
+                return NotFound("User not found.");
             }
-            else if (!string.IsNullOrEmpty(userId))
+
+            // Determine the file name based on the UserType
+            string pdfFileName = user.UserType switch
             {
-                // Fetch PDF by UserId
-                var user = await userManager.FindByIdAsync(userId);
-
-                if (user == null)
-                {
-                    return NotFound("User not found.");
-                }
-
-                pdfFileName = user.UserType switch
-                {
-                    "RiderAccount" => user.DriversLicense,
-                    "LaundryShopAccount" => user.BusinessPermitsOfOwner,
-                    _ => null
-                };
-
-                if (string.IsNullOrEmpty(pdfFileName))
-                {
-                    return NotFound($"No PDF document associated with this user for user type '{user.UserType}'.");
-                }
-            }
-            else
-            {
-                return BadRequest("Either 'laundryShopId' or 'userId' must be provided.");
-            }
+                "RiderAccount" => user.DriversLicense, // Get DriversLicense for RiderAccount
+                "LaundryShopAccount" => user.BusinessPermitsOfOwner, // Get BusinessPermitsOfOwner for LaundryShopAccount
+                _ => null // Handle cases where UserType does not match expected values
+            };
 
             // Ensure the file name is not null or empty
             if (string.IsNullOrEmpty(pdfFileName))
             {
-                return NotFound("No PDF document associated with the provided ID.");
+                return NotFound($"No PDF document associated with this user for user type '{user.UserType}'.");
             }
 
             // Build the full file path by combining the folder path and PDF file name
@@ -563,6 +485,8 @@ namespace LaundryDashAPI_2.Controllers
             // Return the PDF as a file response with the appropriate MIME type and force download
             return File(pdfBytes, contentType, pdfFileName);
         }
+
+       
 
 
 
