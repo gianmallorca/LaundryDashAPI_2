@@ -165,38 +165,7 @@ namespace LaundryDashAPI_2.Controllers
 
 
 
-        [HttpPut("approveLaundryShopAccount/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
-        public async Task<ActionResult> ApproveLaundryShopAccount([FromRoute] Guid id) // Use FromRoute instead of FromBody
-        {
-            // Retrieve the user account by ID
-            var user = await userManager.FindByIdAsync(id.ToString());
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-
-            // Check if the user is not already approved
-            if (user.IsApproved)
-            {
-                return BadRequest("User account is already approved.");
-            }
-
-            // Set the user's IsApproved property to true
-            user.IsApproved = true;
-
-            // Update the user account in the database
-            var result = await userManager.UpdateAsync(user);
-
-            if (result.Succeeded)
-            {
-                return NoContent(); // Successfully approved, return 204 No Content
-            }
-            else
-            {
-                return BadRequest(result.Errors); // Handle any errors that occurred during update
-            }
-        }
+       
 
         [HttpGet("listUsers")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]

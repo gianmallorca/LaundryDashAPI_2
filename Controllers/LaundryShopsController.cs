@@ -254,12 +254,6 @@ namespace LaundryDashAPI_2.Controllers
                 Friday = laundryShop.Friday,
                 Saturday = laundryShop.Saturday,
                 Sunday = laundryShop.Sunday,
-
-                //BusinessPermitId = laundryShop.BusinessPermitId,
-                //DTIPermitId = laundryShop.DTIPermitId,
-                //TaxIdentificationNumber = laundryShop.TaxIdentificationNumber,
-                //EnvironmentalPermit = laundryShop.EnvironmentalPermit,
-                //SanitaryPermit = laundryShop.SanitaryPermit,
                 LaundryShopPicture = laundryShop.LaundryShopPicture
             };
 
@@ -272,7 +266,7 @@ namespace LaundryDashAPI_2.Controllers
         public async Task<ActionResult> Put(Guid id, [FromForm] LaundryShopCreationDTO laundryShopCreationDTO)
         {
             var model = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
-
+            
             if (model == null)
             {
                 return NotFound();
