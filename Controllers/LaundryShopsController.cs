@@ -394,8 +394,28 @@ namespace LaundryDashAPI_2.Controllers
             return mapper.Map<List<LaundryShopDTO>>(laundryShops);
         }
 
+        [HttpPut("approveLaundryShop/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
+        public async Task<ActionResult> ApproveLaundryShop([FromRoute] Guid id)
+        {
+            // Retrieve the laundry shop by ID
+            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(shop => shop.LaundryShopId == id);
+            if (laundryShop == null)
+            {
+                return NotFound("Laundry shop not found.");
+            }
 
-       
+            // Approve the laundry shop
+            laundryShop.IsVerifiedByAdmin = true;
+
+            // Save changes to the database
+            await context.SaveChangesAsync();
+
+            return NoContent(); // Successfully approved, return 204 No Content
+        }
+
+
+
         [HttpDelete("{id:Guid}", Name = "deleteLaundryShop")]
 
         public async Task<ActionResult> Delete(Guid id)
