@@ -325,7 +325,48 @@ namespace LaundryDashAPI_2.Controllers
             return NoContent();
         }
 
+        //[HttpGet("GetPdfByLaundryId/{id}")]
+        //public async Task<IActionResult> GetPdfByLaundryId(Guid id)
+        //{
+        //    // Define the folder path where PDF files are stored
+        //    var folderPath = @"C:\Users\ADMIN\Desktop\LaundryDash API New\LaundryShopImages";
 
+        //    // Check if the folder exists
+        //    if (!Directory.Exists(folderPath))
+        //    {
+        //        return NotFound("PDF folder does not exist.");
+        //    }
+
+        //    // Retrieve the user from the database by the given UserId
+        //    var laundryshop = await context.LaundryShops.FirstOrDefaultAsync(shop => shop.LaundryShopId == id);
+
+        //    // Determine the file name based on the UserType
+        //    string pdfFileName = laundryshop.BusinessPermitsPDF;
+
+        //    // Ensure the file name is not null or empty
+        //    if (string.IsNullOrEmpty(pdfFileName))
+        //    {
+        //        return NotFound($"No PDF document associated with this shop");
+        //    }
+
+        //    // Build the full file path by combining the folder path and PDF file name
+        //    var filePath = Path.Combine(folderPath, pdfFileName);
+
+        //    // Check if the file exists
+        //    if (!System.IO.File.Exists(filePath))
+        //    {
+        //        return NotFound("PDF file not found.");
+        //    }
+
+        //    // Read the PDF file bytes
+        //    var pdfBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+        //    // Set the MIME type for PDF files
+        //    const string contentType = "application/pdf";
+
+        //    // Return the PDF as a file response with the appropriate MIME type and force download
+        //    return File(pdfBytes, contentType, pdfFileName);
+        //}
 
         [HttpGet("getPendingLaundryShops")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
@@ -354,47 +395,7 @@ namespace LaundryDashAPI_2.Controllers
         }
 
 
-        [HttpPut("approveLaundryShop/{id}")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "IsAdmin")]
-        public async Task<ActionResult> ApproveLaundryShop(Guid id)
-        {
-            // Retrieve the LaundryShop based on the given id
-            var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
-
-            // Check if the LaundryShop exists
-            if (laundryShop == null)
-            {
-                return NotFound("Laundry Shop not found.");
-            }
-
-            // Update the IsApprovedByAdmin property to true
-            laundryShop.IsVerifiedByAdmin = true;
-
-            // Save the changes to the database
-            await context.SaveChangesAsync();
-
-            // Return NoContent (successful update)
-            return NoContent();
-        }
-
-
-
-        //[HttpPut("{id:Guid}", Name = "editLaundryShop")]
-
-        //public async Task<ActionResult> EditLaund(Guid id, [FromBody] LaundryShopCreationDTO laundryShopCreationDTO)
-        //{
-        //    var laundryShop = await context.LaundryShops.FirstOrDefaultAsync(x => x.LaundryShopId == id);
-        //    if (laundryShop == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    laundryShop = mapper.Map(laundryShopCreationDTO, laundryShop);
-        //    await context.SaveChangesAsync();
-
-        //    return NoContent();
-        //}
-
+       
         [HttpDelete("{id:Guid}", Name = "deleteLaundryShop")]
 
         public async Task<ActionResult> Delete(Guid id)
