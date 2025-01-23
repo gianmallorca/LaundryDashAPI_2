@@ -790,7 +790,7 @@ namespace LaundryDashAPI_2.Controllers
                 return NotFound("Booking log not found.");
             }
 
-            bookingLog.HasStartedYourLaundry = !bookingLog.HasStartedYourLaundry;
+            bookingLog.HasStartedYourLaundry = true;
 
 
             await context.SaveChangesAsync();
@@ -869,7 +869,7 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("Cannot update status, wait for laundry to finish");
             }
 
-            bookingLog.IsReadyForDelivery = !bookingLog.IsReadyForDelivery;
+            bookingLog.IsReadyForDelivery = true;
 
 
             await context.SaveChangesAsync();
@@ -1403,7 +1403,7 @@ namespace LaundryDashAPI_2.Controllers
                 return BadRequest("Not picked up yet");
             }
 
-            bookingLog.DepartedFromShop = !bookingLog.DepartedFromShop;
+            bookingLog.DepartedFromShop = true;
 
             await context.SaveChangesAsync();
 
@@ -1438,7 +1438,7 @@ namespace LaundryDashAPI_2.Controllers
             }
 
             // Toggle IsOutForDelivery status
-            bookingLog.IsOutForDelivery = !bookingLog.IsOutForDelivery;
+            bookingLog.IsOutForDelivery = true;
 
             await context.SaveChangesAsync();
 
@@ -1699,6 +1699,10 @@ namespace LaundryDashAPI_2.Controllers
                     Weight = b.Weight,
                     TotalPrice = b.TotalPrice,
                     BookingStatus = DetermineBookingStatus(b), // Resolve booking status
+                    RiderName = context.Users
+                                .Where(rider => rider.Id == b.DeliveryRiderId)
+                                .Select(rider => $"{rider.FirstName} {rider.LastName}")
+                        .FirstOrDefault() ?? "Pending" // Resolve client name or fallback)
 
 
                 })
